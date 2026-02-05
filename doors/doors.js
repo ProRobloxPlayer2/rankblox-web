@@ -58,13 +58,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 🔓 OPEN DOOR BUTTON (NEW)
-  openDoorBtn.addEventListener("click", () => {
-    if (health <= 0) return;
+ openDoorBtn.addEventListener("click", () => {
+  if (health <= 0) return;
 
-    door++;
-    doorText.textContent = door;
-    statusText.textContent = "🚪 You opened Door " + door;
-  });
+  door++;
+  doorText.textContent = door;
+  statusText.textContent = "🚪 You opened Door " + door + ". Exploring...";
+});
+
 
   // Random Rush spawn every 8–15 seconds
   setInterval(() => {
@@ -73,3 +74,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, Math.floor(Math.random() * 7000) + 8000);
 });
+
