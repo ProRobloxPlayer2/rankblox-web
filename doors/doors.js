@@ -25,56 +25,43 @@ document.addEventListener("DOMContentLoaded", () => {
     hiding = false;
     hideUsedThisRush = false;
 
-    hideBtn.disabled = false;
     hideBtn.textContent = "Hide in Closet";
+    hideBtn.disabled = false;
 
     statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
 
-   function spawnRush() {
-  rushActive = true;
-  hiding = false;
-  hideUsedThisRush = false;
+    setTimeout(() => {
+      if (hiding) {
+        statusText.textContent = "✅ You survived Rush...";
+        kickOutOnce();
+      } else {
+        statusText.textContent = "💀 Rush got you.";
+        health = 0;
+        updateHealth();
+      }
 
-  hideBtn.disabled = false;
-  hideBtn.textContent = "Hide in Closet";
-
-  statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
-
-  setTimeout(() => {
-    if (hiding) {
-      statusText.textContent = "✅ You survived Rush...";
-      kickOutOnce(); // Hide timer starts
-    } else {
-      statusText.textContent = "💀 Rush got you.";
-      health = 0;
-      updateHealth();
-      hideBtn.disabled = true;
-    }
-
-    rushActive = false;
-  }, 3000);
-}
-
+      rushActive = false;
+    }, 3000);
+  }
 
   function kickOutOnce() {
-  if (hideUsedThisRush) return;
-  hideUsedThisRush = true;
+    if (hideUsedThisRush) return;
+    hideUsedThisRush = true;
 
-  setTimeout(() => {
-    if (!hiding) return;
+    setTimeout(() => {
+      if (!hiding || health <= 0) return;
 
-    hiding = false;
-    hideBtn.textContent = "Hide in Closet";
-    hideBtn.disabled = true;
+      hiding = false;
+      hideBtn.textContent = "Hide in Closet";
 
-    health -= 20;
-    updateHealth();
-    statusText.textContent = "🚪 Hide kicked you out after 10 seconds (-20 HP)";
-  }, 10000);
-}
+      health -= 20;
+      updateHealth();
+      statusText.textContent = "🚪 Hide kicked you out after 10 seconds (-20 HP)";
+    }, 10000);
+  }
 
   hideBtn.addEventListener("click", () => {
-    if (!rushActive) return;
+    if (!rushActive || health <= 0) return;
 
     if (!hiding) {
       // ENTER CLOSET
@@ -89,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // OPEN DOOR (unchanged)
   openDoorBtn.addEventListener("click", () => {
     if (health <= 0) return;
 
@@ -98,11 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
     statusText.textContent = "🚪 You opened Door " + door + ". Exploring...";
   });
 
-  // Random Rush spawn every 8–15 seconds
+  // Rush spawns every 8–15 seconds
   setInterval(() => {
     if (!rushActive && health > 0) {
       spawnRush();
     }
   }, Math.floor(Math.random() * 7000) + 8000);
 });
-
