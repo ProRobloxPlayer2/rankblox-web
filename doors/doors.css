@@ -1,15 +1,32 @@
 body {
-  background: #111;
+  background: #0b0b0b;
   color: white;
   font-family: Arial, sans-serif;
   text-align: center;
 }
 
-#game {
-  margin-top: 40px;
+h1 {
+  margin-top: 20px;
 }
 
-#door {
-  font-size: 80px;
+#ui {
+  margin-top: 20px;
+  font-size: 18px;
+}
+
+#controls {
+  margin-top: 30px;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 16px;
   cursor: pointer;
+  border-radius: 6px;
+  border: none;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
