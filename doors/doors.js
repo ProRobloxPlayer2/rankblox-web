@@ -30,21 +30,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
 
-    setTimeout(() => {
+   function spawnRush() {
+  rushActive = true;
+  hiding = false;
+  hideUsedThisRush = false;
+
+  hideBtn.disabled = false;
+  hideBtn.textContent = "Hide in Closet";
+
+  statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
+
+  setTimeout(() => {
+    if (hiding) {
+      statusText.textContent = "✅ You survived Rush...";
+      kickOutOnce(); // Hide timer starts
+    } else {
+      statusText.textContent = "💀 Rush got you.";
+      health = 0;
+      updateHealth();
       hideBtn.disabled = true;
+    }
 
-      if (hiding) {
-        statusText.textContent = "✅ You survived Rush...";
-        kickOutOnce();
-      } else {
-        statusText.textContent = "💀 Rush got you.";
-        health = 0;
-        updateHealth();
-      }
+    rushActive = false;
+  }, 3000);
+}
 
-      rushActive = false;
-    }, 3000);
-  }
 
   function kickOutOnce() {
   if (hideUsedThisRush) return;
@@ -95,3 +105,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, Math.floor(Math.random() * 7000) + 8000);
 });
+
