@@ -2,16 +2,20 @@ document.addEventListener("DOMContentLoaded", () => {
   let health = 100;
   let hiding = false;
   let rushActive = false;
+  let door = 1;
 
   const healthText = document.getElementById("health");
   const statusText = document.getElementById("status");
   const hideBtn = document.getElementById("hideBtn");
+  const openDoorBtn = document.getElementById("openDoorBtn");
+  const doorText = document.getElementById("doorCount");
 
   function updateHealth() {
     healthText.textContent = health;
     if (health <= 0) {
       statusText.textContent = "💀 You died.";
       hideBtn.disabled = true;
+      openDoorBtn.disabled = true;
     }
   }
 
@@ -22,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
 
-    // 3 seconds to hide
     setTimeout(() => {
       hideBtn.disabled = true;
 
@@ -52,6 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
       hiding = true;
       statusText.textContent = "🫣 Hiding in the closet...";
     }
+  });
+
+  // 🔓 OPEN DOOR BUTTON (NEW)
+  openDoorBtn.addEventListener("click", () => {
+    if (health <= 0) return;
+
+    door++;
+    doorText.textContent = door;
+    statusText.textContent = "🚪 You opened Door " + door;
   });
 
   // Random Rush spawn every 8–15 seconds
