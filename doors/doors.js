@@ -4,31 +4,16 @@
 let door = 1;
 let health = 100;
 
-let rushing = false;
-let ambushActive = false;
-let screechActive = false;
-
-let hiding = false;
-let crouching = false;
-
-let seekActive = false;
-let seekEndDoor = 0;
-let seekTimer = null;
-
 let libraryActive = false;
-let figureActive = false;
-
-let hideUsedThisRush = false;
+let libraryCompleted = false;
 
 // =======================
-// FIGURE PUZZLE DATA
+// ELEVATOR PUZZLE STATE
 // =======================
-let bookClues = [];
-let correctCode = [];
-let enteredCode = [];
-let subDoorUnlocked = false;
-
-const symbols = ["★", "▲", "◆", "●", "■", "⬟"];
+let elevatorActive = false;
+let elevatorRound = 0;
+let elevatorPoints = 15; // start balanced
+let correctConfig = [];
 
 // =======================
 // UI ELEMENTS
@@ -36,21 +21,7 @@ const symbols = ["★", "▲", "◆", "●", "■", "⬟"];
 const statusText = document.getElementById("status");
 const doorText = document.getElementById("door");
 const healthText = document.getElementById("health");
-
 const openDoorBtn = document.getElementById("openDoorBtn");
-const hideBtn = document.getElementById("hideBtn");
-const crouchBtn = document.getElementById("crouchBtn");
-const bookBtn = document.getElementById("bookBtn");
-
-// =======================
-// UI SAFETY (NEVER GREY)
-// =======================
-setInterval(() => {
-  if (health > 0) {
-    hideBtn.disabled = false;
-    crouchBtn.disabled = false;
-  }
-}, 200);
 
 // =======================
 // HEALTH
@@ -71,243 +42,125 @@ function updateHealth() {
 openDoorBtn.onclick = () => {
   if (health <= 0) return;
 
-  // Seek rule
-  if (seekActive && !crouching) {
-    alert("👁 SEEK CAUGHT YOU — DID NOT CROUCH!");
-    health = 0;
-    updateHealth();
+  // DOOR 100 ELEVATOR
+  if (door === 100 && !elevatorActive) {
+    startElevatorPuzzle();
     return;
   }
 
   door++;
   doorText.textContent = `🚪 Door ${door}`;
   statusText.textContent = "🚶 Exploring door...";
+};
 
-  // FIGURE LIBRARY
-  if (door === 50 && !libraryActive) {
-    startLibrary();
+// =======================
+// ELEVATOR PUZZLE
+// =======================
+function startElevatorPuzzle() {
+  elevatorActive = true;
+  elevatorRound = 0;
+  elevatorPoints = 15;
+
+  alert(
+    "🛗 DOOR 100 — ELEVATOR POWER SYSTEM\n\n" +
+    "3 Rounds\n" +
+    "+10 points per correct round\n" +
+    "-5 points per mistake\n\n" +
+    "Reach 30 points to win.\n" +
+    "Hit 0 to die."
+  );
+
+  nextElevatorRound();
+}
+
+function nextElevatorRound() {
+  if (health <= 0) return;
+
+  if (elevatorPoints <= 0) {
+    health = 0;
+    updateHealth();
+    alert("💀 Power failure. You died.");
     return;
   }
 
-  // SEEK START (25–30)
-  if (!seekActive && door >= 25 && door <= 30 && Math.random() < 0.3) {
-    startSeek();
+  if (elevatorPoints >= 30) {
+    elevatorWin();
+    return;
   }
 
-  // SEEK END
-  if (seekActive && door >= seekEndDoor) {
-    endSeek();
+  elevatorRound++;
+  if (elevatorRound > 3) {
+    elevatorWin();
+    return;
   }
 
-  // ENTITY ROLLS
-  if (Math.random() < 0.35) spawnRush();
-  if (Math.random() < 0.2) spawnScreech();
-};
-
-// =======================
-// RUSH
-// =======================
-function spawnRush() {
-  rushing = true;
-  hideUsedThisRush = false;
-  statusText.textContent = "💨 Rush is coming!";
-  alert("💨 RUSH IS COMING — HIDE!");
-
-  setTimeout(() => {
-    if (!hiding) {
-      health = 0;
-      updateHealth();
-    }
-    rushing = false;
-  }, 3000);
+  generateElevatorConfig();
 }
 
-// =======================
-// AMBUSH
-// =======================
-function spawnAmbush() {
-  ambushActive = true;
-  let rebounds = Math.floor(Math.random() * 10) + 3;
-  let count = 0;
+function generateElevatorConfig() {
+  correctConfig = [];
 
-  function ambushPass() {
-    if (health <= 0) return;
-
-    if (!hiding) {
-      health = 0;
-      updateHealth();
-      return;
-    }
-
-    count++;
-    if (count < rebounds) {
-      setTimeout(ambushPass, 1500);
-    } else {
-      ambushActive = false;
-    }
+  while (correctConfig.length < 5) {
+    const num = Math.floor(Math.random() * 10) + 1;
+    if (!correctConfig.includes(num)) correctConfig.push(num);
   }
 
-  ambushPass();
+  const onList = correctConfig.slice(0, 3);
+  const offList = correctConfig.slice(3);
+
+  alert(
+    `🔧 ELEVATOR ROUND ${elevatorRound}\n\n` +
+    `Turn ON: ${onList.join(", ")}\n` +
+    `Turn OFF: ${offList.join(", ")}\n\n` +
+    `Enter switches to turn ON (comma-separated)`
+  );
+
+  const input = prompt("Example: 2,5,9");
+  if (!input) {
+    elevatorPoints -= 5;
+    alert("❌ No input. -5 points.");
+    nextElevatorRound();
+    return;
+  }
+
+  checkElevatorInput(input, onList);
 }
 
-// =======================
-// HIDE / CLOSET
-// =======================
-hideBtn.onclick = () => {
-  if (health <= 0) return;
+function checkElevatorInput(input, onList) {
+  const playerOn = input
+    .split(",")
+    .map(n => parseInt(n.trim()))
+    .filter(n => !isNaN(n));
 
-  if (!hiding) {
-    hiding = true;
-    hideBtn.textContent = "Exit Closet";
-    statusText.textContent = "🛑 Hiding...";
-    kickOutAfterTime();
+  const correct =
+    playerOn.length === onList.length &&
+    playerOn.every(n => onList.includes(n));
+
+  if (correct) {
+    elevatorPoints += 10;
+    alert(`✅ Correct!\nPoints: ${elevatorPoints}`);
   } else {
-    hiding = false;
-    hideBtn.textContent = "Hide in Closet";
-    statusText.textContent = "🚪 Exited closet";
+    elevatorPoints -= 5;
+    alert(`❌ Wrong!\nPoints: ${elevatorPoints}`);
   }
-};
 
-function kickOutAfterTime() {
-  if (hideUsedThisRush) return;
-  hideUsedThisRush = true;
-
-  setTimeout(() => {
-    if (!hiding) return;
-    hiding = false;
-    hideBtn.textContent = "Hide in Closet";
-    health -= 20;
-    updateHealth();
-    alert("😈 Hide kicked you out (-20 HP)");
-  }, 10000);
+  nextElevatorRound();
 }
 
 // =======================
-// SCREECH
+// ELEVATOR WIN
 // =======================
-function spawnScreech() {
-  if (screechActive) return;
-  screechActive = true;
+function elevatorWin() {
+  elevatorActive = false;
 
-  setTimeout(() => {
-    alert("👁 SCREECH — LOOK AT IT!");
-    screechActive = false;
-  }, 2000);
-}
+  alert(
+    "🛗 POWER RESTORED\n\n" +
+    "The elevator hums back to life...\n" +
+    "You escaped the hotel."
+  );
 
-// =======================
-// CROUCH
-// =======================
-crouchBtn.onclick = () => {
-  crouching = !crouching;
-  crouchBtn.textContent = crouching ? "Stand Up" : "Crouch";
-};
-
-// =======================
-// SEEK CHASE
-// =======================
-function startSeek() {
-  seekActive = true;
-  seekEndDoor = door + 10;
-  alert("👁 SEEK IS CHASING YOU!");
-  statusText.textContent = "🏃 SEEK CHASE!";
-  startSeekTimer();
-}
-
-function startSeekTimer() {
-  seekTimer = setTimeout(() => {
-    alert("👁 SEEK CAUGHT YOU (TOO SLOW)");
-    health = 0;
-    updateHealth();
-  }, 10000);
-}
-
-function endSeek() {
-  seekActive = false;
-  clearTimeout(seekTimer);
-  alert("✅ You escaped Seek!");
-  statusText.textContent = "😮 Safe... for now";
-}
-
-// =======================
-// FIGURE LIBRARY
-// =======================
-function startLibrary() {
-  libraryActive = true;
-  figureActive = true;
-  bookClues = [];
-  correctCode = [];
-  enteredCode = [];
-
-  alert("📚 FIGURE LIBRARY — STAY QUIET & CROUCH");
-  statusText.textContent = "📚 Find books. Figure is blind.";
-}
-
-// =======================
-// BOOK COLLECTION
-// =======================
-bookBtn.onclick = () => {
-  if (!libraryActive || health <= 0) return;
-
-  const number = Math.floor(Math.random() * 9) + 1;
-  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-
-  bookClues.push({ number, symbol });
-  alert(`📖 Book Found!\n${symbol} → ${number}`);
-
-  if (bookClues.length === 5) {
-    showNoticeBoard();
-  }
-};
-
-// =======================
-// NOTICE BOARD
-// =======================
-function showNoticeBoard() {
-  let notice = "📜 NOTICE BOARD\n\n";
-  bookClues.forEach(b => notice += `${b.symbol} → ${b.number}\n`);
-  alert(notice);
-  generateCorrectCode();
-}
-
-// =======================
-// SUB-DOOR 50 PUZZLE
-// =======================
-function generateCorrectCode() {
-  correctCode = [...bookClues]
-    .sort((a, b) => a.number - b.number)
-    .map(b => b.symbol);
-
-  alert("🔐 Enter symbols in NUMBER order.");
-  subDoorUnlocked = true;
-}
-
-// =======================
-// SYMBOL ENTRY (PROMPT)
-// =======================
-function enterSymbol() {
-  if (!subDoorUnlocked) return;
-
-  const input = prompt("Enter symbol:");
-  if (!input) return;
-
-  enteredCode.push(input);
-
-  if (enteredCode.length === correctCode.length) {
-    checkCode();
-  }
-}
-
-function checkCode() {
-  if (enteredCode.join("") === correctCode.join("")) {
-    alert("✅ LIBRARY ESCAPED!");
-    libraryActive = false;
-    figureActive = false;
-  } else {
-    alert("❌ WRONG CODE — FIGURE ATTACKS");
-    health = 0;
-    updateHealth();
-  }
+  statusText.textContent = "🏆 DOOR 100 COMPLETE — YOU WIN!";
+  openDoorBtn.disabled = true;
 }
 
 // =======================
