@@ -3,13 +3,29 @@ document.addEventListener("DOMContentLoaded", () => {
   let hiding = false;
   let rushActive = false;
   let door = 1;
-  let hideUsedThisRush = false;
+  let hideUsedThisEntity = false;
 
   const healthText = document.getElementById("health");
   const statusText = document.getElementById("status");
   const hideBtn = document.getElementById("hideBtn");
   const openDoorBtn = document.getElementById("openDoorBtn");
   const doorText = document.getElementById("doorCount");
+
+  /* =========================
+     UI SAFETY
+  ========================= */
+
+  function keepHideButtonActive() {
+    if (health > 0) {
+      hideBtn.disabled = false;
+    }
+  }
+
+  setInterval(keepHideButtonActive, 200);
+
+  /* =========================
+     HEALTH
+  ========================= */
 
   function updateHealth() {
     healthText.textContent = health;
@@ -21,11 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     ENTITY SPAWNING
+     ENTITY SELECTOR
   ========================= */
 
   function spawnEntity() {
-    const ambushChance = Math.min(door / 100, 0.35); // up to 35% chance
+    const ambushChance = Math.min(door / 100, 0.35);
     if (Math.random() < ambushChance) {
       spawnAmbush();
     } else {
@@ -38,12 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
   ========================= */
 
   function spawnRush() {
+    keepHideButtonActive();
+
     rushActive = true;
     hiding = false;
-    hideUsedThisRush = false;
+    hideUsedThisEntity = false;
 
-    statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
     hideBtn.textContent = "Hide in Closet";
+    statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
 
     setTimeout(() => {
       if (hiding) {
@@ -63,21 +81,23 @@ document.addEventListener("DOMContentLoaded", () => {
   ========================= */
 
   function spawnAmbush() {
+    keepHideButtonActive();
+
     rushActive = true;
     hiding = false;
-    hideUsedThisRush = false;
+    hideUsedThisEntity = false;
 
-    const rebounds = Math.floor(Math.random() * 10) + 3; // 3–12
-    let currentRebound = 0;
+    const rebounds = Math.floor(Math.random() * 10) + 3;
+    let current = 0;
 
-    statusText.textContent = "🟢 Ambush is coming! Hide now!";
     hideBtn.textContent = "Hide in Closet";
+    statusText.textContent = "🟢 Ambush is coming! Hide NOW!";
 
-    function ambushAttack() {
+    function rebound() {
       if (health <= 0) return;
 
-      currentRebound++;
-      statusText.textContent = `🟢 Ambush rebound ${currentRebound}/${rebounds}`;
+      current++;
+      statusText.textContent = `🟢 Ambush rebound ${current}/${rebounds}`;
 
       setTimeout(() => {
         if (!hiding) {
@@ -87,8 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        if (currentRebound < rebounds) {
-          setTimeout(ambushAttack, 1200);
+        if (current < rebounds) {
+          setTimeout(rebound, 1200);
         } else {
           statusText.textContent = "✅ You survived Ambush...";
           kickOutOnce();
@@ -97,16 +117,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }, 1500);
     }
 
-    setTimeout(ambushAttack, 2500);
+    setTimeout(rebound, 2500);
   }
 
   /* =========================
-     HIDE / CLOSET
+     CLOSET / HIDE
   ========================= */
 
   function kickOutOnce() {
-    if (hideUsedThisRush) return;
-    hideUsedThisRush = true;
+    if (hideUsedThisEntity) return;
+    hideUsedThisEntity = true;
 
     setTimeout(() => {
       if (!hiding || health <= 0) return;
@@ -116,11 +136,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       health -= 20;
       updateHealth();
-      statusText.textContent = "🚪 Hide kicked you out (-20 HP)";
+      statusText.textContent = "🚪 Hide kicked you out after 10 seconds (-20 HP)";
     }, 10000);
   }
 
   hideBtn.addEventListener("click", () => {
+    keepHideButtonActive();
     if (!rushActive || health <= 0) return;
 
     if (!hiding) {
@@ -147,12 +168,12 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     SPAWN TIMER (INCREASING RATE)
+     SPAWN LOOP (INCREASING RATE)
   ========================= */
 
   function getSpawnInterval() {
-    const base = 15000; // 15s early game
-    const reduction = Math.min(door * 100, 8000); // faster later
+    const base = 15000;
+    const reduction = Math.min(door * 100, 8000);
     return base - reduction;
   }
 
