@@ -1,188 +1,318 @@
-document.addEventListener("DOMContentLoaded", () => {
-  let health = 100;
-  let hiding = false;
-  let rushActive = false;
-  let door = 1;
-  let hideUsedThisEntity = false;
+// =======================
+// CORE GAME STATE
+// =======================
+let door = 1;
+let health = 100;
 
-  const healthText = document.getElementById("health");
-  const statusText = document.getElementById("status");
-  const hideBtn = document.getElementById("hideBtn");
-  const openDoorBtn = document.getElementById("openDoorBtn");
-  const doorText = document.getElementById("doorCount");
+let rushing = false;
+let ambushActive = false;
+let screechActive = false;
 
-  /* =========================
-     UI SAFETY
-  ========================= */
+let hiding = false;
+let crouching = false;
 
-  function keepHideButtonActive() {
-    if (health > 0) {
-      hideBtn.disabled = false;
-    }
+let seekActive = false;
+let seekEndDoor = 0;
+let seekTimer = null;
+
+let libraryActive = false;
+let figureActive = false;
+
+let hideUsedThisRush = false;
+
+// =======================
+// FIGURE PUZZLE DATA
+// =======================
+let bookClues = [];
+let correctCode = [];
+let enteredCode = [];
+let subDoorUnlocked = false;
+
+const symbols = ["★", "▲", "◆", "●", "■", "⬟"];
+
+// =======================
+// UI ELEMENTS
+// =======================
+const statusText = document.getElementById("status");
+const doorText = document.getElementById("door");
+const healthText = document.getElementById("health");
+
+const openDoorBtn = document.getElementById("openDoorBtn");
+const hideBtn = document.getElementById("hideBtn");
+const crouchBtn = document.getElementById("crouchBtn");
+const bookBtn = document.getElementById("bookBtn");
+
+// =======================
+// UI SAFETY (NEVER GREY)
+// =======================
+setInterval(() => {
+  if (health > 0) {
+    hideBtn.disabled = false;
+    crouchBtn.disabled = false;
+  }
+}, 200);
+
+// =======================
+// HEALTH
+// =======================
+function updateHealth() {
+  if (health < 0) health = 0;
+  healthText.textContent = `❤️ ${health}`;
+
+  if (health <= 0) {
+    statusText.textContent = "💀 You died.";
+    openDoorBtn.disabled = true;
+  }
+}
+
+// =======================
+// OPEN DOOR
+// =======================
+openDoorBtn.onclick = () => {
+  if (health <= 0) return;
+
+  // Seek rule
+  if (seekActive && !crouching) {
+    alert("👁 SEEK CAUGHT YOU — DID NOT CROUCH!");
+    health = 0;
+    updateHealth();
+    return;
   }
 
-  setInterval(keepHideButtonActive, 200);
+  door++;
+  doorText.textContent = `🚪 Door ${door}`;
+  statusText.textContent = "🚶 Exploring door...";
 
-  /* =========================
-     HEALTH
-  ========================= */
-
-  function updateHealth() {
-    healthText.textContent = health;
-    if (health <= 0) {
-      statusText.textContent = "💀 You died.";
-      hideBtn.disabled = true;
-      openDoorBtn.disabled = true;
-    }
+  // FIGURE LIBRARY
+  if (door === 50 && !libraryActive) {
+    startLibrary();
+    return;
   }
 
-  /* =========================
-     ENTITY SELECTOR
-  ========================= */
-
-  function spawnEntity() {
-    const ambushChance = Math.min(door / 100, 0.35);
-    if (Math.random() < ambushChance) {
-      spawnAmbush();
-    } else {
-      spawnRush();
-    }
+  // SEEK START (25–30)
+  if (!seekActive && door >= 25 && door <= 30 && Math.random() < 0.3) {
+    startSeek();
   }
 
-  /* =========================
-     RUSH
-  ========================= */
-
-  function spawnRush() {
-    keepHideButtonActive();
-
-    rushActive = true;
-    hiding = false;
-    hideUsedThisEntity = false;
-
-    hideBtn.textContent = "Hide in Closet";
-    statusText.textContent = "⚠️ Rush is coming! Hide in 3 seconds!";
-
-    setTimeout(() => {
-      if (hiding) {
-        statusText.textContent = "✅ You survived Rush...";
-        kickOutOnce();
-      } else {
-        statusText.textContent = "💀 Rush got you.";
-        health = 0;
-        updateHealth();
-      }
-      rushActive = false;
-    }, 3000);
+  // SEEK END
+  if (seekActive && door >= seekEndDoor) {
+    endSeek();
   }
 
-  /* =========================
-     AMBUSH
-  ========================= */
+  // ENTITY ROLLS
+  if (Math.random() < 0.35) spawnRush();
+  if (Math.random() < 0.2) spawnScreech();
+};
 
-  function spawnAmbush() {
-    keepHideButtonActive();
+// =======================
+// RUSH
+// =======================
+function spawnRush() {
+  rushing = true;
+  hideUsedThisRush = false;
+  statusText.textContent = "💨 Rush is coming!";
+  alert("💨 RUSH IS COMING — HIDE!");
 
-    rushActive = true;
-    hiding = false;
-    hideUsedThisEntity = false;
-
-    const rebounds = Math.floor(Math.random() * 10) + 3;
-    let current = 0;
-
-    hideBtn.textContent = "Hide in Closet";
-    statusText.textContent = "🟢 Ambush is coming! Hide NOW!";
-
-    function rebound() {
-      if (health <= 0) return;
-
-      current++;
-      statusText.textContent = `🟢 Ambush rebound ${current}/${rebounds}`;
-
-      setTimeout(() => {
-        if (!hiding) {
-          statusText.textContent = "💀 Ambush caught you.";
-          health = 0;
-          updateHealth();
-          return;
-        }
-
-        if (current < rebounds) {
-          setTimeout(rebound, 1200);
-        } else {
-          statusText.textContent = "✅ You survived Ambush...";
-          kickOutOnce();
-          rushActive = false;
-        }
-      }, 1500);
-    }
-
-    setTimeout(rebound, 2500);
-  }
-
-  /* =========================
-     CLOSET / HIDE
-  ========================= */
-
-  function kickOutOnce() {
-    if (hideUsedThisEntity) return;
-    hideUsedThisEntity = true;
-
-    setTimeout(() => {
-      if (!hiding || health <= 0) return;
-
-      hiding = false;
-      hideBtn.textContent = "Hide in Closet";
-
-      health -= 20;
-      updateHealth();
-      statusText.textContent = "🚪 Hide kicked you out after 10 seconds (-20 HP)";
-    }, 10000);
-  }
-
-  hideBtn.addEventListener("click", () => {
-    keepHideButtonActive();
-    if (!rushActive || health <= 0) return;
-
+  setTimeout(() => {
     if (!hiding) {
-      hiding = true;
-      hideBtn.textContent = "Exit Closet";
-      statusText.textContent = "🫣 Hiding in the closet...";
-    } else {
-      hiding = false;
-      hideBtn.textContent = "Hide in Closet";
-      statusText.textContent = "🚶 You exited the closet.";
+      health = 0;
+      updateHealth();
     }
-  });
+    rushing = false;
+  }, 3000);
+}
 
-  /* =========================
-     OPEN DOOR
-  ========================= */
+// =======================
+// AMBUSH
+// =======================
+function spawnAmbush() {
+  ambushActive = true;
+  let rebounds = Math.floor(Math.random() * 10) + 3;
+  let count = 0;
 
-  openDoorBtn.addEventListener("click", () => {
+  function ambushPass() {
     if (health <= 0) return;
 
-    door++;
-    doorText.textContent = door;
-    statusText.textContent = "🚪 You opened Door " + door + ". Exploring...";
-  });
-
-  /* =========================
-     SPAWN LOOP (INCREASING RATE)
-  ========================= */
-
-  function getSpawnInterval() {
-    const base = 15000;
-    const reduction = Math.min(door * 100, 8000);
-    return base - reduction;
-  }
-
-  function spawnLoop() {
-    if (health > 0 && !rushActive) {
-      spawnEntity();
+    if (!hiding) {
+      health = 0;
+      updateHealth();
+      return;
     }
-    setTimeout(spawnLoop, getSpawnInterval());
+
+    count++;
+    if (count < rebounds) {
+      setTimeout(ambushPass, 1500);
+    } else {
+      ambushActive = false;
+    }
   }
 
-  spawnLoop();
-});
+  ambushPass();
+}
+
+// =======================
+// HIDE / CLOSET
+// =======================
+hideBtn.onclick = () => {
+  if (health <= 0) return;
+
+  if (!hiding) {
+    hiding = true;
+    hideBtn.textContent = "Exit Closet";
+    statusText.textContent = "🛑 Hiding...";
+    kickOutAfterTime();
+  } else {
+    hiding = false;
+    hideBtn.textContent = "Hide in Closet";
+    statusText.textContent = "🚪 Exited closet";
+  }
+};
+
+function kickOutAfterTime() {
+  if (hideUsedThisRush) return;
+  hideUsedThisRush = true;
+
+  setTimeout(() => {
+    if (!hiding) return;
+    hiding = false;
+    hideBtn.textContent = "Hide in Closet";
+    health -= 20;
+    updateHealth();
+    alert("😈 Hide kicked you out (-20 HP)");
+  }, 10000);
+}
+
+// =======================
+// SCREECH
+// =======================
+function spawnScreech() {
+  if (screechActive) return;
+  screechActive = true;
+
+  setTimeout(() => {
+    alert("👁 SCREECH — LOOK AT IT!");
+    screechActive = false;
+  }, 2000);
+}
+
+// =======================
+// CROUCH
+// =======================
+crouchBtn.onclick = () => {
+  crouching = !crouching;
+  crouchBtn.textContent = crouching ? "Stand Up" : "Crouch";
+};
+
+// =======================
+// SEEK CHASE
+// =======================
+function startSeek() {
+  seekActive = true;
+  seekEndDoor = door + 10;
+  alert("👁 SEEK IS CHASING YOU!");
+  statusText.textContent = "🏃 SEEK CHASE!";
+  startSeekTimer();
+}
+
+function startSeekTimer() {
+  seekTimer = setTimeout(() => {
+    alert("👁 SEEK CAUGHT YOU (TOO SLOW)");
+    health = 0;
+    updateHealth();
+  }, 10000);
+}
+
+function endSeek() {
+  seekActive = false;
+  clearTimeout(seekTimer);
+  alert("✅ You escaped Seek!");
+  statusText.textContent = "😮 Safe... for now";
+}
+
+// =======================
+// FIGURE LIBRARY
+// =======================
+function startLibrary() {
+  libraryActive = true;
+  figureActive = true;
+  bookClues = [];
+  correctCode = [];
+  enteredCode = [];
+
+  alert("📚 FIGURE LIBRARY — STAY QUIET & CROUCH");
+  statusText.textContent = "📚 Find books. Figure is blind.";
+}
+
+// =======================
+// BOOK COLLECTION
+// =======================
+bookBtn.onclick = () => {
+  if (!libraryActive || health <= 0) return;
+
+  const number = Math.floor(Math.random() * 9) + 1;
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+
+  bookClues.push({ number, symbol });
+  alert(`📖 Book Found!\n${symbol} → ${number}`);
+
+  if (bookClues.length === 5) {
+    showNoticeBoard();
+  }
+};
+
+// =======================
+// NOTICE BOARD
+// =======================
+function showNoticeBoard() {
+  let notice = "📜 NOTICE BOARD\n\n";
+  bookClues.forEach(b => notice += `${b.symbol} → ${b.number}\n`);
+  alert(notice);
+  generateCorrectCode();
+}
+
+// =======================
+// SUB-DOOR 50 PUZZLE
+// =======================
+function generateCorrectCode() {
+  correctCode = [...bookClues]
+    .sort((a, b) => a.number - b.number)
+    .map(b => b.symbol);
+
+  alert("🔐 Enter symbols in NUMBER order.");
+  subDoorUnlocked = true;
+}
+
+// =======================
+// SYMBOL ENTRY (PROMPT)
+// =======================
+function enterSymbol() {
+  if (!subDoorUnlocked) return;
+
+  const input = prompt("Enter symbol:");
+  if (!input) return;
+
+  enteredCode.push(input);
+
+  if (enteredCode.length === correctCode.length) {
+    checkCode();
+  }
+}
+
+function checkCode() {
+  if (enteredCode.join("") === correctCode.join("")) {
+    alert("✅ LIBRARY ESCAPED!");
+    libraryActive = false;
+    figureActive = false;
+  } else {
+    alert("❌ WRONG CODE — FIGURE ATTACKS");
+    health = 0;
+    updateHealth();
+  }
+}
+
+// =======================
+// INIT
+// =======================
+updateHealth();
+doorText.textContent = `🚪 Door ${door}`;
+statusText.textContent = "🚪 Exploring door...";
