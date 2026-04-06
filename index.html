@@ -2,65 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Rankblox Doors Game</title>
 
-  <!-- Website / bookmark name -->
-  <title>Rankblox Games</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+    }
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png">
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
 
-  <!-- Main stylesheet -->
-  <link rel="stylesheet" href="css/style.css">
+    #elevatorPanel {
+      margin-top: 20px;
+      padding: 15px;
+      border: 2px solid white;
+      display: none;
+      background: #222;
+    }
+
+    #switches button {
+      display: inline-block;
+      width: 80px;
+      margin: 5px;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Navigation bar -->
-  <header class="navbar">
-    <h1>🎮 Rankblox Games</h1>
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="games.html">Play</a>
-      <a href="projects.html">Projects</a>
-    </nav>
-  </header>
+  <h1>🚪 Rankblox Doors</h1>
 
-  <!-- Homepage content -->
-  <section class="hero">
-    <h2>Welcome to Rankblox Games</h2>
-    <p>Play and explore games by Rankblox</p>
+  <!-- GAME INFO -->
+  <p id="door">🚪 Door 1</p>
+  <p id="health">❤️ 100</p>
+  <p id="status">🚪 Exploring...</p>
 
-    <div class="buttons">
+  <!-- MAIN BUTTON -->
+  <button id="openDoorBtn">Open Door</button>
 
-      <!-- Local HTML/JS games hub -->
-      <a href="games.html">
-        <button>Play Local Games</button>
-      </a>
+  <hr>
 
-      <!-- DOORS-like web game -->
-      <a href="doors/doors.html">
-        <button>Play DOORS-Like Game</button>
-      </a>
+  <!-- 🛗 ELEVATOR PUZZLE PANEL -->
+  <div id="elevatorPanel">
+    <h2>🛗 Elevator Power System</h2>
 
-      <!-- Seek & Chase -->
-      <a
-        href="https://gd.games/rankblox-developer/seek-chase"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <button>Play Seek &amp; Chase</button>
-      </a>
+    <p id="elevatorInstruction">
+      Turn ON switches...
+    </p>
 
-      <!-- Squid Game (Scratch) -->
-      <a
-        href="https://scratch.mit.edu/projects/1271405624/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <button>Play Squid Game (Scratch)</button>
-      </a>
+    <div id="switches"></div>
 
-    </div>
-  </section>
+    <br>
+
+    <button id="confirmBtn">Confirm</button>
+  </div>
+
+  <!-- LINK TO YOUR SCRIPT -->
+  <script src="game.js"></script>
 
 </body>
 </html>
