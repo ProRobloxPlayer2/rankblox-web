@@ -1,37 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Rankblox Games</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rankblox Games</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+
+        header {
+            background: #222;
+            padding: 20px;
+        }
+
+        nav {
+            margin-top: 15px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            color: #00aaff;
+        }
+
+        .logo {
+            width: 250px;
+            max-width: 80%;
+            height: auto;
+            margin: 20px auto;
+        }
+
+        main {
+            padding: 30px 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 10px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .button:hover {
+            background: #005fcc;
+        }
+    </style>
 </head>
 
 <body>
 
-<header class="navbar">
-  <h1>🎮 Rankblox Games</h1>
+    <header>
+        <h1>🎮 Rankblox Games</h1>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="games.html">Play</a>
-    <a href="projects.html">Projects</a>
-  </nav>
-</header>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="games.html">Games</a>
+            <a href="projects.html">Projects</a>
+        </nav>
+    </header>
 
-<section class="hero">
-  <h2>Welcome to Rankblox Games</h2>
-  <p>Play and explore games by Rankblox</p>
+    <main>
 
-  <div class="buttons">
-    <a href="games.html">
-      <button>Play Local Games</button>
-    </a>
+        <!-- WEBSITE PICTURE / LOGO -->
+        <img
+            src="images/logo.png"
+            alt="Rankblox Games"
+            class="logo"
+        >
 
-    <a href="https://gd.games/rankblox-developer/seek-chase" target="_blank">
-      <button>Play Seek & Chase</button>
-    </a>
-  </div>
-</section>
+        <h2>Welcome to Rankblox Games!</h2>
+
+        <p>Play games and check out my projects.</p>
+
+        <a class="button" href="games.html">
+            🎮 View Games
+        </a>
+
+        <a class="button" href="projects.html">
+            🛠️ View Projects
+        </a>
+
+    </main>
 
 </body>
 </html>
