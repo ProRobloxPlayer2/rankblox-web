@@ -2,70 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Rankblox Doors Game</title>
-
-  <style>
-    body {
-      background: #111;
-      color: white;
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-    }
-
-    button {
-      padding: 10px 15px;
-      margin: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    #elevatorPanel {
-      margin-top: 20px;
-      padding: 15px;
-      border: 2px solid white;
-      display: none;
-      background: #222;
-    }
-
-    #switches button {
-      display: inline-block;
-      width: 80px;
-      margin: 5px;
-    }
-  </style>
+  <title>Rankblox Games</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-  <h1>🚪 Rankblox Doors</h1>
+<header class="navbar">
+  <h1>🎮 Rankblox Games</h1>
 
-  <!-- GAME INFO -->
-  <p id="door">🚪 Door 1</p>
-  <p id="health">❤️ 100</p>
-  <p id="status">🚪 Exploring...</p>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="games.html">Play</a>
+    <a href="projects.html">Projects</a>
+  </nav>
+</header>
 
-  <!-- MAIN BUTTON -->
-  <button id="openDoorBtn">Open Door</button>
+<section class="hero">
+  <h2>Welcome to Rankblox Games</h2>
+  <p>Play and explore games by Rankblox</p>
 
-  <hr>
+  <div class="buttons">
+    <a href="games.html">
+      <button>Play Local Games</button>
+    </a>
 
-  <!-- 🛗 ELEVATOR PUZZLE PANEL -->
-  <div id="elevatorPanel">
-    <h2>🛗 Elevator Power System</h2>
-
-    <p id="elevatorInstruction">
-      Turn ON switches...
-    </p>
-
-    <div id="switches"></div>
-
-    <br>
-
-    <button id="confirmBtn">Confirm</button>
+    <a href="https://gd.games/rankblox-developer/seek-chase" target="_blank">
+      <button>Play Seek & Chase</button>
+    </a>
   </div>
-
-  <!-- LINK TO YOUR SCRIPT -->
-  <script src="game.js"></script>
+</section>
 
 </body>
 </html>
