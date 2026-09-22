@@ -1,30 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Play Games</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rankblox Games</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            text-align: center;
+        }
+
+        header {
+            background: #222;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        nav {
+            margin-top: 10px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            color: #00aaff;
+        }
+
+        main {
+            padding: 40px 20px;
+        }
+
+        .game-card {
+            background: #222;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px auto;
+            max-width: 500px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-card h2 {
+            margin-top: 0;
+        }
+
+        .game-card p {
+            color: #ccc;
+        }
+
+        .play-button {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .play-button:hover {
+            background: #005fcc;
+        }
+    </style>
 </head>
+
 <body>
 
-<header class="navbar">
-  <h1>🎮 Rankblox Games</h1>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="games.html">Play</a>
-    <a href="projects.html">Projects</a>
-  </nav>
-</header>
+    <header>
+        <h1>🎮 Rankblox Games</h1>
 
-<main class="games">
-  <div class="card">
-    <h2>Clicker Game</h2>
-    <p>Simple JavaScript clicker</p>
-    <a href="games/clicker/index.html">
-      <button>Play</button>
-    </a>
-  </div>
-</main>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="games.html">Games</a>
+            <a href="projects.html">Projects</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <h2>🎮 Games</h2>
+        <p>Choose a game to play!</p>
+
+        <!-- Doors -->
+        <div class="game-card">
+            <h2>🚪 Rankblox Doors</h2>
+
+            <p>
+                Survive the hotel, explore the rooms,
+                avoid dangerous entities, and reach the end.
+            </p>
+
+            <a class="play-button" href="doors.html">
+                ▶ Play Rankblox Doors
+            </a>
+        </div>
+
+        <!-- Seek & Chase -->
+        <div class="game-card">
+            <h2>🏃 Seek & Chase</h2>
+
+            <p>
+                Play the Rankblox Seek & Chase game.
+            </p>
+
+            <a
+                class="play-button"
+                href="https://gd.games/rankblox-developer/seek-chase"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                ▶ Play Seek & Chase
+            </a>
+        </div>
+
+    </main>
 
 </body>
 </html>
