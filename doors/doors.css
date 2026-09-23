@@ -262,3 +262,39 @@ button:active {
     }
 
 }
+/* ================================= */
+/* END SCREEN */
+/* ================================= */
+
+#endScreen {
+    background: #181818;
+    padding: 30px;
+    margin: 30px auto;
+    border-radius: 12px;
+    max-width: 500px;
+}
+
+#endScreen h2 {
+    font-size: 30px;
+}
+
+#homeButton {
+    display: inline-block;
+
+    background: #292929;
+    color: white;
+
+    border: 2px solid #555;
+    border-radius: 8px;
+
+    padding: 12px 25px;
+
+    margin-top: 15px;
+
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#homeButton:hover {
+    background: #3a3a3a;
+}
