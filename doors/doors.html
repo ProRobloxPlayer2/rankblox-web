@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Rankblox Doors</title>
 
-    <!-- Doors CSS -->
     <link rel="stylesheet" href="doors.css">
 </head>
 
@@ -14,61 +14,125 @@
 
     <div id="game">
 
-        <h1>🚪 Rankblox Doors</h1>
+        <header>
+            <h1>🚪 Rankblox Doors</h1>
+        </header>
 
-        <div id="gameInfo">
-            <p id="door">🚪 Door 1</p>
-            <p id="health">❤️ 100</p>
-            <p id="status">🚪 Ready...</p>
-        </div>
+        <!-- ========================= -->
+        <!-- MAIN GAME INFORMATION -->
+        <!-- ========================= -->
 
-        <!-- Main controls -->
-        <div id="controls">
-            <button id="openDoorBtn">🚪 Open Door</button>
+        <section id="gameInfo">
+
+            <p id="door">
+                🚪 Door 1
+            </p>
+
+            <p id="health">
+                ❤️ 100
+            </p>
+
+            <p id="status">
+                🚪 Exploring...
+            </p>
+
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- MAIN CONTROLS -->
+        <!-- ========================= -->
+
+        <section id="controls">
+
+            <button id="openDoorBtn">
+                🚪 Open Door
+            </button>
 
             <button id="hideBtn">
                 🗄️ Hide in Closet
             </button>
 
-            <button id="crouchBtn" style="display: none;">
+            <button id="crouchBtn" style="display:none;">
                 🧎 Crouch
             </button>
 
-            <button id="bookBtn" style="display: none;">
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- LIBRARY -->
+        <!-- ========================= -->
+
+        <section id="libraryPanel" style="display:none;">
+
+            <h2>📚 The Library</h2>
+
+            <p id="libraryStatus">
+                Find the books and collect their clues.
+            </p>
+
+            <div id="books"></div>
+
+            <p id="clues">
+                No clues collected yet.
+            </p>
+
+            <button id="bookBtn" style="display:none;">
                 📖 Pick Up Book
             </button>
-        </div>
-        <!-- DOOR 50 LIBRARY LOCK -->
-<div id="libraryLockPanel" style="display: none;">
 
-    <h2>🔐 Door 50 Lock</h2>
+        </section>
 
-    <p id="libraryTimer">⏱️ Time: 70</p>
 
-    <p>
-        Use the symbol and number list to determine the correct order.
-    </p>
+        <!-- ========================= -->
+        <!-- DOOR 50 LOCK -->
+        <!-- ========================= -->
 
-    <div id="symbolList"></div>
+        <section id="libraryLockPanel" style="display:none;">
 
-    <h3>Lock</h3>
+            <h2>🔐 Door 50 Lock</h2>
 
-    <div id="lockNumbers"></div>
+            <p>
+                Arrange the symbols using the numbers
+                shown in the clue list.
+            </p>
 
-    <button id="unlockLibraryBtn">
-        🔓 Unlock
-    </button>
+            <p id="libraryTimer">
+                ⏱️ Time: 70
+            </p>
 
-    <p id="libraryLockStatus"></p>
+            <h3>Clues</h3>
 
-</div>
-        <!-- Door 100 elevator -->
-        <div id="elevatorPanel" style="display: none;">
+            <div id="symbolList"></div>
+
+            <h3>Lock</h3>
+
+            <div id="lockNumbers"></div>
+
+            <button id="unlockLibraryBtn">
+                🔓 Unlock
+            </button>
+
+            <p id="libraryLockStatus"></p>
+
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- DOOR 100 ELEVATOR -->
+        <!-- ========================= -->
+
+        <section id="elevatorPanel" style="display:none;">
 
             <h2>🛗 Elevator Power</h2>
 
             <p id="elevatorInstruction">
                 Restore the power.
+            </p>
+
+            <p id="elevatorPoints">
+                Points: 15
             </p>
 
             <div id="switches"></div>
@@ -77,13 +141,18 @@
                 ✅ Confirm
             </button>
 
-        </div>
+        </section>
+
 
     </div>
 
-    <!-- IMPORTANT:
-         doors.js is in the SAME folder as doors.html -->
+
+    <!-- ========================= -->
+    <!-- GAME JAVASCRIPT -->
+    <!-- ========================= -->
+
     <script src="doors.js"></script>
 
 </body>
+
 </html>
