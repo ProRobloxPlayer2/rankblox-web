@@ -1,32 +1,38 @@
-// =====================================================
+// =================================
 // RANKBLOX DOORS
-// =====================================================
+// =================================
 
-
-// =====================================================
-// CORE GAME STATE
-// =====================================================
+// =================================
+// GAME VARIABLES
+// =================================
 
 let door = 1;
 let health = 100;
 
 let dead = false;
-
 let hiding = false;
 let crouching = false;
 
 let libraryCompleted = false;
-
-let seekActive = false;
-
 let libraryLockActive = false;
 
+let seekActive = false;
+let seekDoors = 0;
+
 let elevatorActive = false;
+let elevatorRound = 0;
+let elevatorPoints = 15;
+
+let libraryBooks = [];
+let libraryCollected = [];
+
+let libraryTimer = 70;
+let libraryTimerInterval;
 
 
-// =====================================================
-// GET HTML ELEMENTS
-// =====================================================
+// =================================
+// DOM ELEMENTS
+// =================================
 
 const doorText =
     document.getElementById("door");
@@ -52,22 +58,25 @@ const crouchBtn =
 const libraryPanel =
     document.getElementById("libraryPanel");
 
+const libraryStatus =
+    document.getElementById("libraryStatus");
+
 const booksDiv =
     document.getElementById("books");
 
-const cluesText =
+const cluesDiv =
     document.getElementById("clues");
 
 const bookBtn =
     document.getElementById("bookBtn");
 
 
-// Library lock
+// Library Lock
 
 const libraryLockPanel =
     document.getElementById("libraryLockPanel");
 
-const libraryTimer =
+const libraryTimerText =
     document.getElementById("libraryTimer");
 
 const symbolList =
@@ -101,9 +110,21 @@ const confirmBtn =
     document.getElementById("confirmBtn");
 
 
-// =====================================================
+// End screen
+
+const endScreen =
+    document.getElementById("endScreen");
+
+const endTitle =
+    document.getElementById("endTitle");
+
+const endMessage =
+    document.getElementById("endMessage");
+
+
+// =================================
 // HEALTH
-// =====================================================
+// =================================
 
 function updateHealth() {
 
@@ -113,14 +134,22 @@ function updateHealth() {
 
         dead = true;
 
+        healthText.textContent =
+            "❤️ 0";
+
         statusText.textContent =
             "💀 You died.";
 
         openDoorBtn.disabled = true;
-
         hideBtn.disabled = true;
-
         crouchBtn.disabled = true;
+
+        showEndScreen(
+            "💀 You Died",
+            "Your run has ended."
+        );
+
+        return;
     }
 
     healthText.textContent =
@@ -128,59 +157,62 @@ function updateHealth() {
 }
 
 
-// =====================================================
-// DAMAGE
-// =====================================================
-
-function damage(amount, reason) {
+function damage(amount) {
 
     if (dead) return;
 
     health -= amount;
 
-    if (reason) {
-        statusText.textContent = reason;
-    }
-
     updateHealth();
 }
 
 
-// =====================================================
-// INITIAL GAME
-// =====================================================
+// =================================
+// END SCREEN
+// =================================
 
-doorText.textContent =
-    `🚪 Door ${door}`;
+function showEndScreen(title, message) {
 
-healthText.textContent =
-    `❤️ ${health}`;
+    endScreen.style.display = "block";
 
-statusText.textContent =
-    "🚪 Exploring...";
+    endTitle.textContent = title;
+
+    endMessage.textContent = message;
+
+    openDoorBtn.style.display = "none";
+    hideBtn.style.display = "none";
+    crouchBtn.style.display = "none";
+
+    libraryPanel.style.display = "none";
+    libraryLockPanel.style.display = "none";
+    elevatorPanel.style.display = "none";
+}
 
 
-// =====================================================
+// =================================
 // OPEN DOOR
-// =====================================================
+// =================================
 
-openDoorBtn.onclick = () => {
+openDoorBtn.addEventListener("click", function () {
 
     if (dead) return;
 
     if (elevatorActive) {
 
-        alert("⚠️ Restore the elevator power first.");
+        alert(
+            "You must restore the elevator power first!"
+        );
 
         return;
     }
 
 
-    // =============================================
-    // LIBRARY LOCK
-    // =============================================
+    // Door 50
 
-    if (door === 50 && !libraryCompleted) {
+    if (
+        door === 50 &&
+        !libraryCompleted
+    ) {
 
         startLibrary();
 
@@ -188,26 +220,24 @@ openDoorBtn.onclick = () => {
     }
 
 
-    // =============================================
-    // SEEK CHASE
-    // =============================================
+    // Seek chase
 
-    if (seekActive && !crouching) {
+    if (seekActive) {
 
-        damage(
-            100,
-            "💀 You were caught because you weren't crouching."
-        );
+        if (!crouching) {
 
-        alert("💀 You were caught!");
+            alert(
+                "⚠️ You were caught because you were not crouching!"
+            );
 
-        return;
+            damage(100);
+
+            return;
+        }
     }
 
 
-    // =============================================
-    // DOOR 100
-    // =============================================
+    // Door 100
 
     if (door === 100) {
 
@@ -217,9 +247,7 @@ openDoorBtn.onclick = () => {
     }
 
 
-    // =============================================
-    // NORMAL DOOR
-    // =============================================
+    // Normal door
 
     door++;
 
@@ -227,19 +255,15 @@ openDoorBtn.onclick = () => {
         `🚪 Door ${door}`;
 
     statusText.textContent =
-        "🚶 Exploring...";
+        "🚪 Exploring...";
 
 
-    // =============================================
-    // RANDOM EVENTS
-    // =============================================
+    // Random events
 
-    randomRoomEvent();
+    randomEvent();
 
 
-    // =============================================
-    // SEEK START
-    // =============================================
+    // Possible Seek
 
     if (
         door >= 25 &&
@@ -250,19 +274,19 @@ openDoorBtn.onclick = () => {
 
         startSeek();
     }
-};
+
+});
 
 
-// =====================================================
-// RANDOM ROOM EVENTS
-// =====================================================
+// =================================
+// RANDOM EVENTS
+// =================================
 
-function randomRoomEvent() {
-
-    if (dead) return;
+function randomEvent() {
 
     const chance =
         Math.random();
+
 
     // Screech
 
@@ -295,13 +319,20 @@ function randomRoomEvent() {
 }
 
 
-// =====================================================
+// =================================
 // CLOSET
-// =====================================================
+// =================================
 
-hideBtn.onclick = () => {
+hideBtn.addEventListener(
+    "click",
+    toggleCloset
+);
+
+
+function toggleCloset() {
 
     if (dead) return;
+
 
     if (!hiding) {
 
@@ -313,9 +344,10 @@ hideBtn.onclick = () => {
         statusText.textContent =
             "🗄️ You are hiding in the closet.";
 
-        // Automatically leave after 10 seconds
 
-        setTimeout(() => {
+        // Automatically kick player out
+
+        setTimeout(function () {
 
             if (!hiding || dead) return;
 
@@ -324,14 +356,19 @@ hideBtn.onclick = () => {
             hideBtn.textContent =
                 "🗄️ Hide in Closet";
 
-            damage(
-                20,
-                "⚠️ You stayed in the closet too long."
-            );
+            damage(20);
+
+            if (!dead) {
+
+                statusText.textContent =
+                    "⚠️ The closet forced you out!";
+            }
 
         }, 10000);
 
-    } else {
+    }
+
+    else {
 
         hiding = false;
 
@@ -339,54 +376,52 @@ hideBtn.onclick = () => {
             "🗄️ Hide in Closet";
 
         statusText.textContent =
-            "🚶 You left the closet.";
+            "🚪 You left the closet.";
     }
-};
+}
 
 
-// =====================================================
+// =================================
 // RUSH
-// =====================================================
+// =================================
 
 function startRush() {
 
     if (dead) return;
 
     statusText.textContent =
-        "⚡ Something is coming!";
+        "⚠️ Something is coming! HIDE!";
 
     alert(
-        "⚡ WARNING!\n\n" +
-        "Something is rushing through the rooms!\n" +
-        "Hide in the closet!"
+        "⚠️ RUSH IS COMING!\nYou have 3 seconds to hide!"
     );
 
-    setTimeout(() => {
+
+    setTimeout(function () {
 
         if (dead) return;
+
 
         if (hiding) {
 
             statusText.textContent =
-                "🗄️ You survived the attack.";
+                "🗄️ You survived the attack!";
 
-        } else {
+        }
 
-            damage(
-                100,
-                "💀 You were caught by the rushing entity."
-            );
+        else {
 
-            alert("💀 You were caught!");
+            damage(100);
+
         }
 
     }, 3000);
 }
 
 
-// =====================================================
+// =================================
 // AMBUSH
-// =====================================================
+// =================================
 
 function startAmbush() {
 
@@ -396,161 +431,182 @@ function startAmbush() {
         Math.floor(Math.random() * 8) + 3;
 
     statusText.textContent =
-        "🔄 Something is coming back...";
+        `⚠️ AMBUSH! ${rebounds} attacks incoming!`;
 
     alert(
-        `🔄 WARNING!\n\n` +
-        `The entity may return ${rebounds} times!\n` +
-        `Stay hidden.`
+        `⚠️ AMBUSH!\nIt will rebound ${rebounds} times!`
     );
 
-    let currentRebound = 0;
 
-    const attack = () => {
+    let attack = 0;
 
-        if (dead) return;
 
-        currentRebound++;
+    const interval =
+        setInterval(function () {
 
-        if (!hiding) {
+            if (dead) {
 
-            damage(
-                100,
-                "💀 You were caught."
-            );
+                clearInterval(interval);
 
-            alert("💀 You were caught!");
+                return;
+            }
 
-            return;
-        }
 
-        statusText.textContent =
-            `🗄️ Survived rebound ${currentRebound}/${rebounds}`;
+            attack++;
 
-        if (currentRebound < rebounds) {
 
-            setTimeout(
-                attack,
-                700
-            );
+            if (!hiding) {
 
-        } else {
+                damage(100);
 
-            statusText.textContent =
-                "🚪 The danger has passed.";
-        }
-    };
+                clearInterval(interval);
 
-    setTimeout(
-        attack,
-        1500
-    );
+                return;
+            }
+
+
+            if (attack >= rebounds) {
+
+                clearInterval(interval);
+
+                statusText.textContent =
+                    "🗄️ You survived Ambush!";
+            }
+
+        }, 1000);
 }
 
 
-// =====================================================
+// =================================
 // SCREECH
-// =====================================================
+// =================================
 
 function startScreech() {
 
     if (dead) return;
 
-    let clicked = false;
 
-    const screech =
+    statusText.textContent =
+        "⚠️ Something is watching you...";
+
+
+    const screechBtn =
         document.createElement("button");
 
-    screech.textContent =
-        "👁️ SCREECH! CLICK ME!";
 
-    screech.id =
-        "screechButton";
+    screechBtn.textContent =
+        "👁️ LOOK AT IT!";
 
-    document.getElementById("controls")
-        .appendChild(screech);
 
-    screech.onclick = () => {
+    screechBtn.style.background =
+        "#500";
 
-        clicked = true;
 
-        screech.remove();
+    document
+        .getElementById("controls")
+        .appendChild(screechBtn);
 
-        statusText.textContent =
-            "👁️ You stopped the Screech.";
-    };
 
-    setTimeout(() => {
+    let clicked = false;
+
+
+    screechBtn.addEventListener(
+        "click",
+        function () {
+
+            clicked = true;
+
+            screechBtn.remove();
+
+            statusText.textContent =
+                "👁️ You stopped it!";
+        }
+    );
+
+
+    setTimeout(function () {
 
         if (clicked || dead) return;
 
-        screech.remove();
+        screechBtn.remove();
 
-        damage(
-            40,
-            "👁️ You ignored the Screech."
-        );
+        statusText.textContent =
+            "⚠️ You ignored it!";
+
+        damage(40);
 
     }, 4000);
 }
 
 
-// =====================================================
+// =================================
 // CROUCH
-// =====================================================
+// =================================
 
-crouchBtn.onclick = () => {
+crouchBtn.addEventListener(
+    "click",
+    function () {
 
-    if (dead) return;
+        if (dead || !seekActive) return;
 
-    crouching = !crouching;
 
-    if (crouching) {
+        crouching =
+            !crouching;
 
-        crouchBtn.textContent =
-            "🧎 Stand Up";
 
-        statusText.textContent =
-            "🧎 You are crouching.";
+        if (crouching) {
 
-    } else {
+            crouchBtn.textContent =
+                "🧍 Stand Up";
 
-        crouchBtn.textContent =
-            "🧎 Crouch";
+            statusText.textContent =
+                "🧎 You are crouching.";
 
-        statusText.textContent =
-            "🚶 You stood up.";
+        }
+
+        else {
+
+            crouchBtn.textContent =
+                "🧎 Crouch";
+
+            statusText.textContent =
+                "🧍 You stood up.";
+        }
     }
-};
+);
 
 
-// =====================================================
+// =================================
 // SEEK
-// =====================================================
+// =================================
 
 function startSeek() {
 
-    if (seekActive || dead) return;
+    if (dead || seekActive) return;
+
 
     seekActive = true;
 
+    seekDoors = 0;
+
     crouching = false;
+
 
     crouchBtn.style.display =
         "inline-block";
 
+
     statusText.textContent =
-        "🏃 A chase has started!";
+        "⚠️ CHASE! CROUCH AND KEEP MOVING!";
+
 
     alert(
-        "🏃 CHASE!\n\n" +
-        "Crouch before opening doors."
+        "⚠️ CHASE STARTED!\nStay crouched!"
     );
 
-    let chaseDoors = 0;
 
     const chaseInterval =
-        setInterval(() => {
+        setInterval(function () {
 
             if (dead) {
 
@@ -559,16 +615,29 @@ function startSeek() {
                 return;
             }
 
-            if (!seekActive) {
+
+            seekDoors++;
+
+
+            if (!crouching) {
+
+                alert(
+                    "⚠️ You were caught!"
+                );
+
+                damage(100);
 
                 clearInterval(chaseInterval);
 
                 return;
             }
 
-            chaseDoors++;
 
-            if (chaseDoors >= 10) {
+            statusText.textContent =
+                `🏃 Chase: ${seekDoors}/10 doors`;
+
+
+            if (seekDoors >= 10) {
 
                 seekActive = false;
 
@@ -578,11 +647,7 @@ function startSeek() {
                     "none";
 
                 statusText.textContent =
-                    "🏃 You escaped the chase!";
-
-                alert(
-                    "🏃 You escaped!"
-                );
+                    "✅ You escaped the chase!";
 
                 clearInterval(chaseInterval);
             }
@@ -591,37 +656,11 @@ function startSeek() {
 }
 
 
-// =====================================================
+// =================================
 // LIBRARY
-// =====================================================
-
-let libraryBooks = [];
-
-let collectedBooks = [];
-
-let libraryTimerValue = 70;
-
-let libraryTimerInterval = null;
-
-
-// Symbols
-
-const librarySymbols = [
-    "◆",
-    "●",
-    "▲",
-    "★",
-    "■"
-];
-
-
-// =====================================================
-// START LIBRARY
-// =====================================================
+// =================================
 
 function startLibrary() {
-
-    if (libraryCompleted || dead) return;
 
     libraryPanel.style.display =
         "block";
@@ -629,121 +668,169 @@ function startLibrary() {
     openDoorBtn.style.display =
         "none";
 
-    statusText.textContent =
-        "📚 You entered the Library.";
+    libraryCompleted = false;
 
     libraryBooks = [];
 
-    collectedBooks = [];
+    libraryCollected = [];
 
 
-    // Generate five books
+    libraryStatus.textContent =
+        "📚 Find all 5 books and collect their clues.";
 
-    for (let i = 0; i < 5; i++) {
-
-        const number =
-            Math.floor(Math.random() * 99) + 1;
-
-        const symbol =
-            librarySymbols[i];
-
-        libraryBooks.push({
-            number: number,
-            symbol: symbol
-        });
-    }
-
-
-    renderLibraryBooks();
-
-    cluesText.textContent =
-        "📖 Collect all 5 books.";
-
-}
-
-
-// =====================================================
-// RENDER BOOKS
-// =====================================================
-
-function renderLibraryBooks() {
 
     booksDiv.innerHTML = "";
 
-    libraryBooks.forEach((book, index) => {
+    cluesDiv.textContent =
+        "No clues collected yet.";
 
-        const button =
-            document.createElement("button");
 
-        button.className =
-            "book";
+    const symbols = [
+        "◆",
+        "●",
+        "▲",
+        "★",
+        "■"
+    ];
 
-        button.textContent =
-            `📖 Book ${index + 1}`;
 
-        button.onclick = () => {
+    // Generate books
 
-            collectBook(index);
+    for (let i = 0; i < 5; i++) {
+
+        const book = {
+
+            number:
+                Math.floor(
+                    Math.random() * 99
+                ) + 1,
+
+            symbol:
+                symbols[i],
+
+            collected: false
 
         };
 
-        booksDiv.appendChild(button);
 
-    });
+        libraryBooks.push(book);
+    }
+
+
+    // Display books
+
+    libraryBooks.forEach(
+        function (book, index) {
+
+            const button =
+                document.createElement("button");
+
+
+            button.className =
+                "book";
+
+
+            button.textContent =
+                `📖 Book ${index + 1}`;
+
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    collectBook(index);
+
+                }
+            );
+
+
+            booksDiv.appendChild(button);
+        }
+    );
 }
 
 
-// =====================================================
+// =================================
 // COLLECT BOOK
-// =====================================================
+// =================================
 
 function collectBook(index) {
-
-    if (dead) return;
-
-    if (collectedBooks.includes(index)) return;
-
-    collectedBooks.push(index);
 
     const book =
         libraryBooks[index];
 
-    cluesText.textContent +=
-        `\n ${book.symbol} = ${book.number}`;
 
-    statusText.textContent =
-        `📖 Found ${book.symbol} = ${book.number}`;
+    if (book.collected) return;
 
 
-    if (collectedBooks.length === 5) {
+    book.collected = true;
 
-        statusText.textContent =
-            "📚 All books collected!";
+    libraryCollected.push(book);
 
-        setTimeout(() => {
 
-            startLibraryLock();
+    const buttons =
+        document.querySelectorAll(
+            ".book"
+        );
 
-        }, 500);
 
+    buttons[index].disabled =
+        true;
+
+
+    buttons[index].textContent =
+        `✅ ${book.number} ${book.symbol}`;
+
+
+    updateClues();
+
+
+    if (
+        libraryCollected.length === 5
+    ) {
+
+        startLibraryLock();
     }
 }
 
 
-// =====================================================
+// =================================
+// UPDATE CLUES
+// =================================
+
+function updateClues() {
+
+    cluesDiv.innerHTML = "";
+
+
+    libraryCollected.forEach(
+        function (book) {
+
+            const clue =
+                document.createElement("div");
+
+
+            clue.className =
+                "library-clue";
+
+
+            clue.textContent =
+                `${book.symbol} = ${book.number}`;
+
+
+            cluesDiv.appendChild(clue);
+        }
+    );
+}
+
+
+// =================================
 // LIBRARY LOCK
-// =====================================================
-
-let libraryCorrectCode = [];
-
-let libraryPlayerCode = [];
-
-
-// =====================================================
-// START LOCK
-// =====================================================
+// =================================
 
 function startLibraryLock() {
+
+    libraryLockActive = true;
 
     libraryPanel.style.display =
         "none";
@@ -751,60 +838,111 @@ function startLibraryLock() {
     libraryLockPanel.style.display =
         "block";
 
-    openDoorBtn.style.display =
-        "none";
 
-    libraryLockActive = true;
-
-    libraryTimerValue = 70;
-
-    libraryCorrectCode = [];
-
-    libraryPlayerCode = [];
+    libraryLockStatus.textContent =
+        "";
 
 
     // Sort books by number
 
     const sortedBooks =
         [...libraryBooks].sort(
-            (a, b) => a.number - b.number
+            function (a, b) {
+                return a.number - b.number;
+            }
         );
 
 
-    // Correct symbol order
-
-    libraryCorrectCode =
-        sortedBooks.map(
-            book => book.symbol
-        );
-
-
-    // Show clues
+    // Show correct symbol order
 
     symbolList.innerHTML = "";
 
-    libraryBooks.forEach(book => {
 
-        const line =
-            document.createElement("div");
+    sortedBooks.forEach(
+        function (book, index) {
 
-        line.className =
-            "library-clue";
-
-        line.textContent =
-            `${book.symbol} = ${book.number}`;
-
-        symbolList.appendChild(line);
-
-    });
+            const clue =
+                document.createElement("div");
 
 
-    // Create lock
+            clue.className =
+                "library-clue";
 
-    createLock();
+
+            clue.textContent =
+                `${index + 1}. ${book.symbol} = ${book.number}`;
 
 
-    updateLibraryTimer();
+            symbolList.appendChild(clue);
+        }
+    );
+
+
+    // Create number locks
+
+    lockNumbers.innerHTML = "";
+
+
+    sortedBooks.forEach(
+        function () {
+
+            const button =
+                document.createElement("button");
+
+
+            button.className =
+                "lock-number";
+
+
+            button.textContent =
+                "0";
+
+
+            button.dataset.value =
+                "0";
+
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    let value =
+                        Number(
+                            button.dataset.value
+                        );
+
+
+                    value++;
+
+
+                    if (value > 9) {
+                        value = 0;
+                    }
+
+
+                    button.dataset.value =
+                        value;
+
+
+                    button.textContent =
+                        value;
+                }
+            );
+
+
+            lockNumbers.appendChild(
+                button
+            );
+        }
+    );
+
+
+    // Start timer
+
+    libraryTimer = 70;
+
+    libraryTimerText.textContent =
+        `⏱️ Time: ${libraryTimer}`;
 
 
     clearInterval(
@@ -813,212 +951,141 @@ function startLibraryLock() {
 
 
     libraryTimerInterval =
-        setInterval(() => {
+        setInterval(
+            function () {
 
-            libraryTimerValue--;
-
-            updateLibraryTimer();
-
-            if (libraryTimerValue <= 0) {
-
-                clearInterval(
-                    libraryTimerInterval
-                );
-
-                libraryLockActive = false;
-
-                damage(
-                    100,
-                    "💀 You ran out of time."
-                );
-
-                alert(
-                    "💀 The 70-second timer expired!"
-                );
-            }
-
-        }, 1000);
-}
+                libraryTimer--;
 
 
-// =====================================================
-// CREATE LOCK
-// =====================================================
+                libraryTimerText.textContent =
+                    `⏱️ Time: ${libraryTimer}`;
 
-function createLock() {
 
-    lockNumbers.innerHTML = "";
+                if (libraryTimer <= 0) {
 
-    libraryPlayerCode =
-        libraryCorrectCode.map(
-            () => 0
+                    clearInterval(
+                        libraryTimerInterval
+                    );
+
+
+                    libraryLockStatus.textContent =
+                        "⏰ TIME'S UP!";
+
+
+                    damage(100);
+                }
+
+            },
+            1000
         );
-
-
-    for (
-        let i = 0;
-        i < libraryCorrectCode.length;
-        i++
-    ) {
-
-        const button =
-            document.createElement("button");
-
-        button.className =
-            "lock-number";
-
-        button.textContent =
-            "0";
-
-
-        button.onclick = () => {
-
-            libraryPlayerCode[i]++;
-
-            if (
-                libraryPlayerCode[i] > 9
-            ) {
-
-                libraryPlayerCode[i] = 0;
-            }
-
-            button.textContent =
-                libraryPlayerCode[i];
-
-        };
-
-
-        lockNumbers.appendChild(
-            button
-        );
-    }
 }
 
 
-// =====================================================
-// LIBRARY TIMER
-// =====================================================
-
-function updateLibraryTimer() {
-
-    libraryTimer.textContent =
-        `⏱️ Time: ${libraryTimerValue}`;
-}
-
-
-// =====================================================
+// =================================
 // UNLOCK LIBRARY
-// =====================================================
+// =================================
 
-unlockLibraryBtn.onclick = () => {
+unlockLibraryBtn.addEventListener(
+    "click",
+    checkLibraryLock
+);
 
-    if (!libraryLockActive) return;
 
-    const buttons =
+function checkLibraryLock() {
+
+    if (dead || !libraryLockActive) return;
+
+
+    const sortedBooks =
+        [...libraryBooks].sort(
+            function (a, b) {
+                return a.number - b.number;
+            }
+        );
+
+
+    const lockButtons =
         document.querySelectorAll(
             ".lock-number"
         );
 
 
-    const playerNumbers =
-        Array.from(buttons).map(
-            button =>
-                Number(button.textContent)
-        );
+    let correct = true;
 
 
-    // Convert correct symbols into numbers
+    for (
+        let i = 0;
+        i < sortedBooks.length;
+        i++
+    ) {
 
-    const correctNumbers =
-        [...libraryCorrectCode].map(
-            symbol => {
-
-                const book =
-                    libraryBooks.find(
-                        b => b.symbol === symbol
-                    );
-
-                return book.number;
-            }
-        );
+        const entered =
+            Number(
+                lockButtons[i].dataset.value
+            );
 
 
-    const correct =
-        playerNumbers.length ===
-            correctNumbers.length &&
+        if (
+            entered !==
+            sortedBooks[i].number % 10
+        ) {
 
-        playerNumbers.every(
-            (number, index) =>
-                number === correctNumbers[index]
-        );
+            correct = false;
 
-
-    if (correct) {
-
-        clearInterval(
-            libraryTimerInterval
-        );
-
-        libraryLockActive = false;
-
-        libraryCompleted = true;
+            break;
+        }
+    }
 
 
-        libraryLockPanel.style.display =
-            "none";
-
-        openDoorBtn.style.display =
-            "inline-block";
-
-
-        door = 51;
-
-        doorText.textContent =
-            "🚪 Door 51";
-
-        statusText.textContent =
-            "🔓 Library lock opened!";
-
-
-        alert(
-            "🔓 Correct!\n\n" +
-            "The Library lock has opened.\n" +
-            "You may continue to Door 51."
-        );
-
-    } else {
+    if (!correct) {
 
         libraryLockStatus.textContent =
-            "❌ Incorrect combination!";
+            "❌ WRONG COMBINATION!";
 
-        damage(
-            100,
-            "💀 The lock rejected your code."
-        );
 
-        alert(
-            "❌ Wrong combination!"
-        );
+        damage(100);
+
+        return;
     }
-};
 
 
-// =====================================================
+    clearInterval(
+        libraryTimerInterval
+    );
+
+
+    libraryLockActive = false;
+
+    libraryCompleted = true;
+
+
+    libraryLockPanel.style.display =
+        "none";
+
+
+    openDoorBtn.style.display =
+        "inline-block";
+
+
+    door = 51;
+
+    doorText.textContent =
+        "🚪 Door 51";
+
+
+    statusText.textContent =
+        "🔓 Library unlocked!";
+
+
+    alert(
+        "🔓 The Library door has been unlocked!"
+    );
+}
+
+
+// =================================
 // ELEVATOR
-// =====================================================
-
-let elevatorRound = 0;
-
-let elevatorPoints = 15;
-
-let elevatorCorrect = [];
-
-let elevatorPlayer = [];
-
-
-// =====================================================
-// START ELEVATOR
-// =====================================================
+// =================================
 
 function startElevator() {
 
@@ -1028,44 +1095,35 @@ function startElevator() {
 
     elevatorPoints = 15;
 
-    elevatorPanel.style.display =
-        "block";
 
     openDoorBtn.style.display =
         "none";
 
-    alert(
-        "🛗 POWER FAILURE\n\n" +
-        "Complete the switch puzzles.\n" +
-        "Correct: +10 points\n" +
-        "Wrong: -5 points"
-    );
+
+    elevatorPanel.style.display =
+        "block";
+
+
+    updateElevatorPoints();
+
 
     nextElevatorRound();
 }
 
 
-// =====================================================
-// NEXT ELEVATOR ROUND
-// =====================================================
+// =================================
+// ELEVATOR ROUND
+// =================================
+
+let elevatorCorrect = [];
+
 
 function nextElevatorRound() {
 
-    if (dead) return;
+    elevatorRound++;
 
 
-    if (elevatorPoints <= 0) {
-
-        damage(
-            100,
-            "💀 The elevator power failed."
-        );
-
-        return;
-    }
-
-
-    if (elevatorRound >= 3) {
+    if (elevatorRound > 3) {
 
         winGame();
 
@@ -1073,79 +1131,95 @@ function nextElevatorRound() {
     }
 
 
-    elevatorRound++;
+    switchesDiv.innerHTML = "";
 
-    generateElevatorPuzzle();
-}
-
-
-// =====================================================
-// GENERATE ELEVATOR PUZZLE
-// =====================================================
-
-function generateElevatorPuzzle() {
 
     elevatorCorrect = [];
 
-    elevatorPlayer =
-        Array(10).fill(false);
 
+    // Generate 10 random ON/OFF states
 
     for (let i = 0; i < 10; i++) {
 
-        elevatorCorrect[i] =
-            Math.random() < 0.5;
+        elevatorCorrect.push(
+            Math.random() < 0.5
+        );
     }
 
 
-    elevatorInstruction.textContent =
-        `Round ${elevatorRound}/3 — Set each switch as instructed.`;
+    // Tell player what to do
+
+    const onSwitches = [];
+
+    const offSwitches = [];
 
 
-    elevatorPointsText.textContent =
-        `Points: ${elevatorPoints}`;
+    elevatorCorrect.forEach(
+        function (state, index) {
+
+            if (state) {
+
+                onSwitches.push(
+                    index + 1
+                );
+
+            }
+
+            else {
+
+                offSwitches.push(
+                    index + 1
+                );
+            }
+        }
+    );
 
 
-    renderElevatorSwitches();
-}
+    elevatorInstruction.innerHTML =
+        `Round ${elevatorRound}/3<br><br>
+        🟢 ON: ${onSwitches.join(", ")}<br>
+        ⚫ OFF: ${offSwitches.join(", ")}`;
 
 
-// =====================================================
-// RENDER ELEVATOR SWITCHES
-// =====================================================
-
-function renderElevatorSwitches() {
-
-    switchesDiv.innerHTML = "";
-
+    // Create switches
 
     for (let i = 0; i < 10; i++) {
 
         const button =
             document.createElement("button");
 
+
         button.className =
             "switch";
 
 
+        button.dataset.on =
+            "false";
+
+
         button.textContent =
-            `${i + 1}: OFF`;
+            `Switch ${i + 1}: OFF`;
 
 
-        button.onclick = () => {
+        button.addEventListener(
+            "click",
+            function () {
 
-            elevatorPlayer[i] =
-                !elevatorPlayer[i];
+                const isOn =
+                    button.dataset.on ===
+                    "true";
 
 
-            button.textContent =
-                `${i + 1}: ${
-                    elevatorPlayer[i]
-                        ? "ON"
-                        : "OFF"
-                }`;
+                button.dataset.on =
+                    (!isOn).toString();
 
-        };
+
+                button.textContent =
+                    isOn
+                        ? `Switch ${i + 1}: OFF`
+                        : `Switch ${i + 1}: ON`;
+            }
+        );
 
 
         switchesDiv.appendChild(
@@ -1155,67 +1229,128 @@ function renderElevatorSwitches() {
 }
 
 
-// =====================================================
+// =================================
 // ELEVATOR CONFIRM
-// =====================================================
+// =================================
 
-confirmBtn.onclick = () => {
+confirmBtn.addEventListener(
+    "click",
+    checkElevator
+);
 
-    if (!elevatorActive) return;
+
+function checkElevator() {
+
+    if (dead || !elevatorActive) return;
 
 
-    const correct =
-        elevatorPlayer.every(
-            (value, index) =>
-                value ===
-                elevatorCorrect[index]
+    const switches =
+        document.querySelectorAll(
+            ".switch"
         );
 
 
-    if (correct) {
+    let correctCount = 0;
+
+
+    switches.forEach(
+        function (button, index) {
+
+            const playerState =
+                button.dataset.on ===
+                "true";
+
+
+            if (
+                playerState ===
+                elevatorCorrect[index]
+            ) {
+
+                correctCount++;
+
+            }
+
+        }
+    );
+
+
+    if (correctCount === 10) {
 
         elevatorPoints += 10;
 
         alert(
-            `✅ Correct!\n\nPoints: ${elevatorPoints}`
+            "✅ Correct! +10 points!"
         );
 
-    } else {
+    }
+
+    else {
 
         elevatorPoints -= 5;
 
         alert(
-            `❌ Wrong!\n\nPoints: ${elevatorPoints}`
+            `❌ Wrong! You got ${correctCount}/10 correct.\n-5 points.`
         );
     }
 
 
-    elevatorPointsText.textContent =
-        `Points: ${elevatorPoints}`;
+    updateElevatorPoints();
 
+
+    // Death
 
     if (elevatorPoints <= 0) {
 
-        damage(
-            100,
-            "💀 You ran out of power points."
-        );
+        damage(100);
 
         return;
     }
 
 
-    nextElevatorRound();
-};
+    // Win immediately at 30
+
+    if (elevatorPoints >= 30) {
+
+        winGame();
+
+        return;
+    }
 
 
-// =====================================================
-// WIN
-// =====================================================
+    // Continue rounds
+
+    if (elevatorRound < 3) {
+
+        nextElevatorRound();
+
+    }
+
+    else {
+
+        winGame();
+    }
+}
+
+
+// =================================
+// ELEVATOR POINTS
+// =================================
+
+function updateElevatorPoints() {
+
+    elevatorPointsText.textContent =
+        `Points: ${elevatorPoints}`;
+}
+
+
+// =================================
+// WIN GAME
+// =================================
 
 function winGame() {
 
     elevatorActive = false;
+
 
     elevatorPanel.style.display =
         "none";
@@ -1225,13 +1360,27 @@ function winGame() {
         "🏆 YOU ESCAPED!";
 
 
-    alert(
-        "🏆 CONGRATULATIONS!\n\n" +
-        "You restored the elevator power.\n\n" +
-        "You escaped the hotel!"
+    showEndScreen(
+        "🏆 HOTEL COMPLETE!",
+        "You restored the elevator and escaped the hotel!"
     );
-
-
-    openDoorBtn.style.display =
-        "none";
 }
+
+
+// =================================
+// INITIAL GAME STATE
+// =================================
+
+updateHealth();
+
+doorText.textContent =
+    "🚪 Door 1";
+
+statusText.textContent =
+    "🚪 Exploring...";
+
+hideBtn.textContent =
+    "🗄️ Hide in Closet";
+
+crouchBtn.style.display =
+    "none";
