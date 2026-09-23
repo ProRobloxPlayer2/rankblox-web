@@ -1,25 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Rankblox DOORS</title>
-  <link rel="stylesheet" href="doors.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rankblox Doors</title>
+
+    <!-- Doors CSS -->
+    <link rel="stylesheet" href="doors.css">
 </head>
+
 <body>
 
-<h1>🚪 Rankblox DOORS</h1>
+    <div id="game">
 
-<div id="ui">
-  <p>Health: <span id="health">100</span></p>
-  <p>Door: <span id="doorCount">1</span></p>
-  <p id="status">Explore the room...</p>
-</div>
+        <h1>🚪 Rankblox Doors</h1>
 
-<div id="controls">
-  <button id="openDoorBtn">Open Door</button>
-  <button id="hideBtn" disabled>Hide in Closet</button>
-</div>
+        <div id="gameInfo">
+            <p id="door">🚪 Door 1</p>
+            <p id="health">❤️ 100</p>
+            <p id="status">🚪 Ready...</p>
+        </div>
 
-<script src="doors.js" defer></script>
+        <!-- Main controls -->
+        <div id="controls">
+            <button id="openDoorBtn">🚪 Open Door</button>
+
+            <button id="hideBtn">
+                🗄️ Hide in Closet
+            </button>
+
+            <button id="crouchBtn" style="display: none;">
+                🧎 Crouch
+            </button>
+
+            <button id="bookBtn" style="display: none;">
+                📖 Pick Up Book
+            </button>
+        </div>
+
+        <!-- Library -->
+        <div id="libraryPanel" style="display: none;">
+
+            <h2>📚 Library</h2>
+
+            <p id="libraryStatus">
+                Find the books and collect their clues.
+            </p>
+
+            <div id="books"></div>
+
+            <p id="clues"></p>
+
+            <div id="codePanel" style="display: none;">
+                <input
+                    id="codeInput"
+                    type="text"
+                    placeholder="Enter code"
+                >
+
+                <button id="codeBtn">
+                    🔐 Enter Code
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Door 100 elevator -->
+        <div id="elevatorPanel" style="display: none;">
+
+            <h2>🛗 Elevator Power</h2>
+
+            <p id="elevatorInstruction">
+                Restore the power.
+            </p>
+
+            <div id="switches"></div>
+
+            <button id="confirmBtn">
+                ✅ Confirm
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- IMPORTANT:
+         doors.js is in the SAME folder as doors.html -->
+    <script src="doors.js"></script>
+
 </body>
 </html>
