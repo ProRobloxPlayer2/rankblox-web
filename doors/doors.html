@@ -38,34 +38,30 @@
                 📖 Pick Up Book
             </button>
         </div>
+        <!-- DOOR 50 LIBRARY LOCK -->
+<div id="libraryLockPanel" style="display: none;">
 
-        <!-- Library -->
-        <div id="libraryPanel" style="display: none;">
+    <h2>🔐 Door 50 Lock</h2>
 
-            <h2>📚 Library</h2>
+    <p id="libraryTimer">⏱️ Time: 70</p>
 
-            <p id="libraryStatus">
-                Find the books and collect their clues.
-            </p>
+    <p>
+        Use the symbol and number list to determine the correct order.
+    </p>
 
-            <div id="books"></div>
+    <div id="symbolList"></div>
 
-            <p id="clues"></p>
+    <h3>Lock</h3>
 
-            <div id="codePanel" style="display: none;">
-                <input
-                    id="codeInput"
-                    type="text"
-                    placeholder="Enter code"
-                >
+    <div id="lockNumbers"></div>
 
-                <button id="codeBtn">
-                    🔐 Enter Code
-                </button>
-            </div>
+    <button id="unlockLibraryBtn">
+        🔓 Unlock
+    </button>
 
-        </div>
+    <p id="libraryLockStatus"></p>
 
+</div>
         <!-- Door 100 elevator -->
         <div id="elevatorPanel" style="display: none;">
 
