@@ -11,6 +11,7 @@ let health = 100;
 
 let dead = false;
 let hiding = false;
+let closetTimer = null;
 let crouching = false;
 
 let libraryCompleted = false;
@@ -333,47 +334,52 @@ function toggleCloset() {
 
     if (dead) return;
 
-
+    // Enter the closet
     if (!hiding) {
 
         hiding = true;
 
-        hideBtn.textContent =
-            "🚪 Exit Closet";
+        hideBtn.textContent = "🚪 Exit Closet";
 
         statusText.textContent =
             "🗄️ You are hiding in the closet.";
 
+        // Cancel any previous closet timer
+        clearTimeout(closetTimer);
 
-        // Automatically kick player out
-
-        setTimeout(function () {
+        // Start a fresh 10-second timer
+        closetTimer = setTimeout(function () {
 
             if (!hiding || dead) return;
 
             hiding = false;
 
-            hideBtn.textContent =
-                "🗄️ Hide in Closet";
+            hideBtn.textContent = "🗄️ Hide in Closet";
+
+            closetTimer = null;
 
             damage(20);
 
             if (!dead) {
-
                 statusText.textContent =
-                    "⚠️ The closet forced you out!";
+                    "⚠️ Hide forced you out of the closet!";
             }
 
         }, 10000);
 
     }
 
+    // Exit the closet manually
     else {
 
         hiding = false;
 
-        hideBtn.textContent =
-            "🗄️ Hide in Closet";
+        // Cancel the timer from this visit
+        clearTimeout(closetTimer);
+
+        closetTimer = null;
+
+        hideBtn.textContent = "🗄️ Hide in Closet";
 
         statusText.textContent =
             "🚪 You left the closet.";
