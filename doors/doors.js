@@ -1,21 +1,34 @@
-// =================================
-// RANKBLOX DOORS
-// =================================
+from pathlib import Path
 
-// =================================
-// GAME VARIABLES
-// =================================
+content = r'''// ===============================================
+// RANKBLOX DOORS — complete replacement doors.js
+// Works with the current doors.html and doors.css.
+// ===============================================
+
+"use strict";
+
+// -------------------- Game state --------------------
 
 let door = 1;
 let health = 100;
-
 let dead = false;
+let gameEnded = false;
+
 let hiding = false;
-let closetTimer = null;
 let crouching = false;
+
+let closetTimer = null;
+let rushTimer = null;
+let screechTimer = null;
+let ambushTimer = null;
+let seekTimer = null;
+let libraryTimerInterval = null;
 
 let libraryCompleted = false;
 let libraryLockActive = false;
+let libraryBooks = [];
+let libraryCollected = [];
+let libraryTimer = 70;
 
 let seekActive = false;
 let seekDoors = 0;
@@ -23,1370 +36,752 @@ let seekDoors = 0;
 let elevatorActive = false;
 let elevatorRound = 0;
 let elevatorPoints = 15;
+let elevatorCorrect = [];
 
-let libraryBooks = [];
-let libraryCollected = [];
+// -------------------- Find page elements --------------------
 
-let libraryTimer = 70;
-let libraryTimerInterval;
+const $ = (id) => document.getElementById(id);
 
+const doorText = $("door");
+const healthText = $("health");
+const statusText = $("status");
 
-// =================================
-// DOM ELEMENTS
-// =================================
+const openDoorBtn = $("openDoorBtn");
+const hideBtn = $("hideBtn");
+const crouchBtn = $("crouchBtn");
 
-const doorText =
-    document.getElementById("door");
+const libraryPanel = $("libraryPanel");
+const libraryStatus = $("libraryStatus");
+const booksDiv = $("books");
+const cluesDiv = $("clues");
 
-const healthText =
-    document.getElementById("health");
+const libraryLockPanel = $("libraryLockPanel");
+const libraryTimerText = $("libraryTimer");
+const symbolList = $("symbolList");
+const lockNumbers = $("lockNumbers");
+const unlockLibraryBtn = $("unlockLibraryBtn");
+const libraryLockStatus = $("libraryLockStatus");
 
-const statusText =
-    document.getElementById("status");
+const elevatorPanel = $("elevatorPanel");
+const elevatorInstruction = $("elevatorInstruction");
+const elevatorPointsText = $("elevatorPoints");
+const switchesDiv = $("switches");
+const confirmBtn = $("confirmBtn");
 
-const openDoorBtn =
-    document.getElementById("openDoorBtn");
+const endScreen = $("endScreen");
+const endTitle = $("endTitle");
+const endMessage = $("endMessage");
 
-const hideBtn =
-    document.getElementById("hideBtn");
+// -------------------- Small helpers --------------------
 
-const crouchBtn =
-    document.getElementById("crouchBtn");
-
-
-// Library
-
-const libraryPanel =
-    document.getElementById("libraryPanel");
-
-const libraryStatus =
-    document.getElementById("libraryStatus");
-
-const booksDiv =
-    document.getElementById("books");
-
-const cluesDiv =
-    document.getElementById("clues");
-
-const bookBtn =
-    document.getElementById("bookBtn");
-
-
-// Library Lock
-
-const libraryLockPanel =
-    document.getElementById("libraryLockPanel");
-
-const libraryTimerText =
-    document.getElementById("libraryTimer");
-
-const symbolList =
-    document.getElementById("symbolList");
-
-const lockNumbers =
-    document.getElementById("lockNumbers");
-
-const unlockLibraryBtn =
-    document.getElementById("unlockLibraryBtn");
-
-const libraryLockStatus =
-    document.getElementById("libraryLockStatus");
-
-
-// Elevator
-
-const elevatorPanel =
-    document.getElementById("elevatorPanel");
-
-const elevatorInstruction =
-    document.getElementById("elevatorInstruction");
-
-const elevatorPointsText =
-    document.getElementById("elevatorPoints");
-
-const switchesDiv =
-    document.getElementById("switches");
-
-const confirmBtn =
-    document.getElementById("confirmBtn");
-
-
-// End screen
-
-const endScreen =
-    document.getElementById("endScreen");
-
-const endTitle =
-    document.getElementById("endTitle");
-
-const endMessage =
-    document.getElementById("endMessage");
-
-
-// =================================
-// HEALTH
-// =================================
-
-function updateHealth() {
-
-    if (health <= 0) {
-
-        health = 0;
-
-        dead = true;
-
-        healthText.textContent =
-            "❤️ 0";
-
-        statusText.textContent =
-            "💀 You died.";
-
-        openDoorBtn.disabled = true;
-        hideBtn.disabled = true;
-        crouchBtn.disabled = true;
-
-        showEndScreen(
-            "💀 You Died",
-            "Your run has ended."
-        );
-
-        return;
-    }
-
-    healthText.textContent =
-        `❤️ ${health}`;
+function setStatus(message) {
+    if (statusText) statusText.textContent = message;
 }
 
+function updateDoorText() {
+    if (doorText) doorText.textContent = `🚪 Door ${door}`;
+}
+
+function updateHealth() {
+    health = Math.max(0, Math.min(100, health));
+
+    if (healthText) healthText.textContent = `❤️ ${health}`;
+
+    if (health <= 0 && !dead) {
+        endGame(false);
+    }
+}
 
 function damage(amount) {
-
-    if (dead) return;
-
+    if (dead || gameEnded) return;
     health -= amount;
-
     updateHealth();
 }
 
+function clearGameTimers() {
+    clearTimeout(closetTimer);
+    clearTimeout(rushTimer);
+    clearTimeout(screechTimer);
+    clearInterval(ambushTimer);
+    clearInterval(seekTimer);
+    clearInterval(libraryTimerInterval);
 
-// =================================
-// END SCREEN
-// =================================
-
-function showEndScreen(title, message) {
-
-    endScreen.style.display = "block";
-
-    endTitle.textContent = title;
-
-    endMessage.textContent = message;
-
-    openDoorBtn.style.display = "none";
-    hideBtn.style.display = "none";
-    crouchBtn.style.display = "none";
-
-    libraryPanel.style.display = "none";
-    libraryLockPanel.style.display = "none";
-    elevatorPanel.style.display = "none";
+    closetTimer = null;
+    rushTimer = null;
+    screechTimer = null;
+    ambushTimer = null;
+    seekTimer = null;
+    libraryTimerInterval = null;
 }
 
+function setControlsDisabled(disabled) {
+    if (openDoorBtn) openDoorBtn.disabled = disabled;
+    if (hideBtn) hideBtn.disabled = disabled;
+    if (crouchBtn) crouchBtn.disabled = disabled;
+    if (unlockLibraryBtn) unlockLibraryBtn.disabled = disabled;
+    if (confirmBtn) confirmBtn.disabled = disabled;
+}
 
-// =================================
-// OPEN DOOR
-// =================================
+function hideAllPanels() {
+    if (libraryPanel) libraryPanel.style.display = "none";
+    if (libraryLockPanel) libraryLockPanel.style.display = "none";
+    if (elevatorPanel) elevatorPanel.style.display = "none";
+}
 
-openDoorBtn.addEventListener("click", function () {
+function showEndScreen(title, message) {
+    if (endScreen && endTitle && endMessage) {
+        endScreen.style.display = "block";
+        endTitle.textContent = title;
+        endMessage.textContent = message;
+    } else {
+        // Fallback if the end-screen HTML has not been added yet.
+        alert(`${title}\n\n${message}`);
+    }
 
-    if (dead) return;
+    if (openDoorBtn) openDoorBtn.style.display = "none";
+    if (hideBtn) hideBtn.style.display = "none";
+    if (crouchBtn) crouchBtn.style.display = "none";
+
+    hideAllPanels();
+}
+
+function saveScore(score) {
+    // The game still works when the player is not logged in.
+    if (typeof window.saveRankbloxHighScore !== "function") return;
+
+    window.saveRankbloxHighScore("Rankblox Doors", score)
+        .then((result) => {
+            if (result && !result.success) {
+                console.info("Rankblox score was not saved:", result.message);
+            }
+        })
+        .catch((error) => {
+            console.warn("Could not save Rankblox Doors score:", error);
+        });
+}
+
+function endGame(won) {
+    if (gameEnded) return;
+
+    gameEnded = true;
+    dead = !won;
+
+    clearGameTimers();
+
+    hiding = false;
+    crouching = false;
+    seekActive = false;
+    elevatorActive = false;
+    libraryLockActive = false;
+
+    if (hideBtn) hideBtn.textContent = "🗄️ Hide in Closet";
+    if (crouchBtn) crouchBtn.textContent = "🧎 Crouch";
+
+    setControlsDisabled(true);
+
+    if (healthText) healthText.textContent = `❤️ ${health}`;
+
+    if (won) {
+        setStatus("🏆 YOU ESCAPED!");
+        saveScore(100);
+        showEndScreen(
+            "🏆 HOTEL COMPLETE!",
+            "You restored the elevator and escaped the hotel!"
+        );
+    } else {
+        setStatus("💀 You died.");
+        saveScore(Math.max(0, door - 1));
+        showEndScreen(
+            "💀 You Died",
+            `Your run ended at Door ${door}.`
+        );
+    }
+}
+
+// -------------------- Doors and room events --------------------
+
+function openNextDoor() {
+    if (dead || gameEnded) return;
 
     if (elevatorActive) {
-
-        alert(
-            "You must restore the elevator power first!"
-        );
-
+        setStatus("🛗 Finish the elevator puzzle first!");
         return;
     }
 
+    if (libraryLockActive) {
+        setStatus("🔐 Finish the Door 50 lock first!");
+        return;
+    }
 
-    // Door 50
-
-    if (
-        door === 50 &&
-        !libraryCompleted
-    ) {
-
+    // The Library blocks progress until its puzzle is solved.
+    if (door === 50 && !libraryCompleted) {
         startLibrary();
-
         return;
     }
 
-
-    // Seek chase
-
+    // During the chase, each opened door counts as one of ten.
     if (seekActive) {
-
         if (!crouching) {
-
-            alert(
-                "⚠️ You were caught because you were not crouching!"
-            );
-
+            setStatus("⚠️ You were caught because you were not crouching!");
             damage(100);
-
             return;
         }
-    }
 
+        door += 1;
+        seekDoors += 1;
+        updateDoorText();
 
-    // Door 100
+        if (seekDoors >= 10) {
+            finishSeek();
+        } else {
+            setStatus(`🏃 Chase! Door ${seekDoors}/10 — stay crouched!`);
+        }
 
-    if (door === 100) {
-
-        startElevator();
-
+        // Do not trigger other random events during the chase.
+        if (door === 100) startElevator();
         return;
     }
 
+    // Reaching Door 100 starts the elevator puzzle.
+    if (door === 100) {
+        startElevator();
+        return;
+    }
 
-    // Normal door
-
-    door++;
-
-    doorText.textContent =
-        `🚪 Door ${door}`;
-
-    statusText.textContent =
-        "🚪 Exploring...";
-
-
-    // Random events
+    door += 1;
+    updateDoorText();
+    setStatus("🚪 Exploring...");
 
     randomEvent();
 
-
-    // Possible Seek
-
+    // Seek may begin between Doors 25 and 30.
     if (
         door >= 25 &&
         door <= 30 &&
-        Math.random() < 0.20 &&
-        !seekActive
+        !seekActive &&
+        Math.random() < 0.20
     ) {
-
         startSeek();
-    }
-
-});
-
-
-// =================================
-// RANDOM EVENTS
-// =================================
-
-function randomEvent() {
-
-    const chance =
-        Math.random();
-
-
-    // Screech
-
-    if (chance < 0.15) {
-
-        startScreech();
-
-        return;
-    }
-
-
-    // Rush
-
-    if (chance < 0.22) {
-
-        startRush();
-
-        return;
-    }
-
-
-    // Ambush
-
-    if (chance < 0.27) {
-
-        startAmbush();
-
-        return;
     }
 }
 
+function randomEvent() {
+    if (dead || gameEnded || seekActive) return;
 
-// =================================
-// CLOSET
-// =================================
+    const chance = Math.random();
 
-hideBtn.addEventListener(
-    "click",
-    toggleCloset
-);
+    if (chance < 0.15) {
+        startScreech();
+    } else if (chance < 0.22) {
+        startRush();
+    } else if (chance < 0.27) {
+        startAmbush();
+    }
+}
 
+if (openDoorBtn) {
+    openDoorBtn.addEventListener("click", openNextDoor);
+}
+
+// -------------------- Closet --------------------
 
 function toggleCloset() {
+    if (dead || gameEnded) return;
 
-    if (dead) return;
-
-    // Enter the closet
     if (!hiding) {
-
         hiding = true;
 
-        hideBtn.textContent = "🚪 Exit Closet";
+        if (hideBtn) hideBtn.textContent = "🚪 Exit Closet";
+        setStatus("🗄️ You are hiding in the closet.");
 
-        statusText.textContent =
-            "🗄️ You are hiding in the closet.";
-
-        // Cancel any previous closet timer
+        // Important: each closet visit gets a fresh, independent timer.
         clearTimeout(closetTimer);
 
-        // Start a fresh 10-second timer
-        closetTimer = setTimeout(function () {
+        closetTimer = setTimeout(() => {
+            closetTimer = null;
 
-            if (!hiding || dead) return;
+            if (!hiding || dead || gameEnded) return;
 
             hiding = false;
 
-            hideBtn.textContent = "🗄️ Hide in Closet";
+            if (hideBtn) hideBtn.textContent = "🗄️ Hide in Closet";
 
-            closetTimer = null;
-
+            setStatus("⚠️ Hide forced you out! You lost 20 health.");
             damage(20);
-
-            if (!dead) {
-                statusText.textContent =
-                    "⚠️ Hide forced you out of the closet!";
-            }
-
         }, 10000);
-
-    }
-
-    // Exit the closet manually
-    else {
-
+    } else {
         hiding = false;
 
-        // Cancel the timer from this visit
         clearTimeout(closetTimer);
-
         closetTimer = null;
 
-        hideBtn.textContent = "🗄️ Hide in Closet";
-
-        statusText.textContent =
-            "🚪 You left the closet.";
+        if (hideBtn) hideBtn.textContent = "🗄️ Hide in Closet";
+        setStatus("🚪 You left the closet.");
     }
 }
 
+if (hideBtn) hideBtn.addEventListener("click", toggleCloset);
 
-// =================================
-// RUSH
-// =================================
+// -------------------- Rush --------------------
 
 function startRush() {
+    if (dead || gameEnded) return;
 
-    if (dead) return;
+    setStatus("⚠️ Something is approaching! Hide within 3 seconds!");
+    alert("⚠️ RUSH IS COMING!\nYou have 3 seconds to hide!");
 
-    statusText.textContent =
-        "⚠️ Something is coming! HIDE!";
+    clearTimeout(rushTimer);
 
-    alert(
-        "⚠️ RUSH IS COMING!\nYou have 3 seconds to hide!"
-    );
+    rushTimer = setTimeout(() => {
+        rushTimer = null;
 
-
-    setTimeout(function () {
-
-        if (dead) return;
-
+        if (dead || gameEnded) return;
 
         if (hiding) {
-
-            statusText.textContent =
-                "🗄️ You survived the attack!";
-
-        }
-
-        else {
-
+            setStatus("✅ You survived the attack by hiding!");
+        } else {
+            setStatus("💀 You didn't hide in time!");
             damage(100);
-
         }
-
     }, 3000);
 }
 
-
-// =================================
-// AMBUSH
-// =================================
+// -------------------- Ambush --------------------
 
 function startAmbush() {
+    if (dead || gameEnded) return;
 
-    if (dead) return;
-
-    const rebounds =
-        Math.floor(Math.random() * 8) + 3;
-
-    statusText.textContent =
-        `⚠️ AMBUSH! ${rebounds} attacks incoming!`;
-
-    alert(
-        `⚠️ AMBUSH!\nIt will rebound ${rebounds} times!`
-    );
-
-
+    const rebounds = Math.floor(Math.random() * 10) + 3; // 3–12
     let attack = 0;
 
+    setStatus(`⚠️ Ambush is coming! ${rebounds} passes!`);
+    alert(`⚠️ AMBUSH!\nIt will pass ${rebounds} times. Hide!`);
 
-    const interval =
-        setInterval(function () {
+    clearInterval(ambushTimer);
 
-            if (dead) {
+    ambushTimer = setInterval(() => {
+        if (dead || gameEnded) {
+            clearInterval(ambushTimer);
+            ambushTimer = null;
+            return;
+        }
 
-                clearInterval(interval);
+        attack += 1;
+        setStatus(`⚠️ Ambush pass ${attack}/${rebounds}...`);
 
-                return;
-            }
+        if (!hiding) {
+            clearInterval(ambushTimer);
+            ambushTimer = null;
+            damage(100);
+            return;
+        }
 
-
-            attack++;
-
-
-            if (!hiding) {
-
-                damage(100);
-
-                clearInterval(interval);
-
-                return;
-            }
-
-
-            if (attack >= rebounds) {
-
-                clearInterval(interval);
-
-                statusText.textContent =
-                    "🗄️ You survived Ambush!";
-            }
-
-        }, 1000);
+        if (attack >= rebounds) {
+            clearInterval(ambushTimer);
+            ambushTimer = null;
+            setStatus("✅ You survived Ambush!");
+        }
+    }, 1000);
 }
 
-
-// =================================
-// SCREECH
-// =================================
+// -------------------- Screech --------------------
 
 function startScreech() {
+    if (dead || gameEnded) return;
 
-    if (dead) return;
+    const controls = $("controls");
+    if (!controls) return;
 
+    setStatus("👁️ Something is watching you! Click LOOK within 4 seconds.");
 
-    statusText.textContent =
-        "⚠️ Something is watching you...";
+    const screechButton = document.createElement("button");
+    screechButton.type = "button";
+    screechButton.textContent = "👁️ LOOK!";
+    screechButton.id = "screechButton";
+    controls.appendChild(screechButton);
 
+    let handled = false;
 
-    const screechBtn =
-        document.createElement("button");
+    const removeButton = () => {
+        if (screechButton.isConnected) screechButton.remove();
+    };
 
+    screechButton.addEventListener("click", () => {
+        if (handled || dead || gameEnded) return;
 
-    screechBtn.textContent =
-        "👁️ LOOK AT IT!";
+        handled = true;
+        clearTimeout(screechTimer);
+        screechTimer = null;
+        removeButton();
+        setStatus("✅ You noticed Screech in time!");
+    });
 
+    clearTimeout(screechTimer);
+    screechTimer = setTimeout(() => {
+        screechTimer = null;
 
-    screechBtn.style.background =
-        "#500";
+        if (handled || dead || gameEnded) return;
 
-
-    document
-        .getElementById("controls")
-        .appendChild(screechBtn);
-
-
-    let clicked = false;
-
-
-    screechBtn.addEventListener(
-        "click",
-        function () {
-
-            clicked = true;
-
-            screechBtn.remove();
-
-            statusText.textContent =
-                "👁️ You stopped it!";
-        }
-    );
-
-
-    setTimeout(function () {
-
-        if (clicked || dead) return;
-
-        screechBtn.remove();
-
-        statusText.textContent =
-            "⚠️ You ignored it!";
-
+        handled = true;
+        removeButton();
+        setStatus("⚠️ You didn't look in time! -40 health.");
         damage(40);
-
     }, 4000);
 }
 
-
-// =================================
-// CROUCH
-// =================================
-
-crouchBtn.addEventListener(
-    "click",
-    function () {
-
-        if (dead || !seekActive) return;
-
-
-        crouching =
-            !crouching;
-
-
-        if (crouching) {
-
-            crouchBtn.textContent =
-                "🧍 Stand Up";
-
-            statusText.textContent =
-                "🧎 You are crouching.";
-
-        }
-
-        else {
-
-            crouchBtn.textContent =
-                "🧎 Crouch";
-
-            statusText.textContent =
-                "🧍 You stood up.";
-        }
-    }
-);
-
-
-// =================================
-// SEEK
-// =================================
+// -------------------- Seek chase --------------------
 
 function startSeek() {
-
-    if (dead || seekActive) return;
-
+    if (dead || gameEnded || seekActive) return;
 
     seekActive = true;
-
     seekDoors = 0;
-
     crouching = false;
 
-
-    crouchBtn.style.display =
-        "inline-block";
-
-
-    statusText.textContent =
-        "⚠️ CHASE! CROUCH AND KEEP MOVING!";
-
-
-    alert(
-        "⚠️ CHASE STARTED!\nStay crouched!"
-    );
-
-
-    const chaseInterval =
-        setInterval(function () {
-
-            if (dead) {
-
-                clearInterval(chaseInterval);
-
-                return;
-            }
-
-
-            seekDoors++;
-
-
-            if (!crouching) {
-
-                alert(
-                    "⚠️ You were caught!"
-                );
-
-                damage(100);
-
-                clearInterval(chaseInterval);
-
-                return;
-            }
-
-
-            statusText.textContent =
-                `🏃 Chase: ${seekDoors}/10 doors`;
-
-
-            if (seekDoors >= 10) {
-
-                seekActive = false;
-
-                crouching = false;
-
-                crouchBtn.style.display =
-                    "none";
-
-                statusText.textContent =
-                    "✅ You escaped the chase!";
-
-                clearInterval(chaseInterval);
-            }
-
-        }, 5000);
-}
-
-
-// =================================
-// LIBRARY
-// =================================
-
-function startLibrary() {
-
-    libraryPanel.style.display =
-        "block";
-
-    openDoorBtn.style.display =
-        "none";
-
-    libraryCompleted = false;
-
-    libraryBooks = [];
-
-    libraryCollected = [];
-
-
-    libraryStatus.textContent =
-        "📚 Find all 5 books and collect their clues.";
-
-
-    booksDiv.innerHTML = "";
-
-    cluesDiv.textContent =
-        "No clues collected yet.";
-
-
-    const symbols = [
-        "◆",
-        "●",
-        "▲",
-        "★",
-        "■"
-    ];
-
-
-    // Generate books
-
-    for (let i = 0; i < 5; i++) {
-
-        const book = {
-
-            number:
-                Math.floor(
-                    Math.random() * 99
-                ) + 1,
-
-            symbol:
-                symbols[i],
-
-            collected: false
-
-        };
-
-
-        libraryBooks.push(book);
+    if (crouchBtn) {
+        crouchBtn.style.display = "inline-block";
+        crouchBtn.textContent = "🧎 Crouch";
     }
 
-
-    // Display books
-
-    libraryBooks.forEach(
-        function (book, index) {
-
-            const button =
-                document.createElement("button");
-
-
-            button.className =
-                "book";
-
-
-            button.textContent =
-                `📖 Book ${index + 1}`;
-
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    collectBook(index);
-
-                }
-            );
-
-
-            booksDiv.appendChild(button);
-        }
-    );
+    setStatus("⚠️ CHASE! Crouch before opening each door!");
+    alert("⚠️ THE CHASE HAS STARTED!\nClick Crouch, then open doors. Stay crouched for 10 doors.");
 }
 
+function toggleCrouch() {
+    if (dead || gameEnded || !seekActive) return;
 
-// =================================
-// COLLECT BOOK
-// =================================
+    crouching = !crouching;
 
-function collectBook(index) {
+    if (crouchBtn) {
+        crouchBtn.textContent = crouching ? "🧍 Stand Up" : "🧎 Crouch";
+    }
 
-    const book =
-        libraryBooks[index];
+    setStatus(crouching ? "🧎 You're crouching. Keep opening doors!" : "⚠️ You're standing. Crouch before opening the next door!");
+}
 
+function finishSeek() {
+    seekActive = false;
+    crouching = false;
 
-    if (book.collected) return;
+    if (crouchBtn) {
+        crouchBtn.style.display = "none";
+        crouchBtn.textContent = "🧎 Crouch";
+    }
 
+    setStatus("✅ You escaped the chase!");
+}
+
+if (crouchBtn) crouchBtn.addEventListener("click", toggleCrouch);
+
+// -------------------- Door 50 Library --------------------
+
+function startLibrary() {
+    if (dead || gameEnded || libraryCompleted) return;
+
+    if (libraryPanel) libraryPanel.style.display = "block";
+    if (openDoorBtn) openDoorBtn.style.display = "none";
+
+    if (libraryStatus) {
+        libraryStatus.textContent = "Find all 5 books. Each book reveals a symbol and number.";
+    }
+
+    if (booksDiv) booksDiv.replaceChildren();
+    if (cluesDiv) cluesDiv.textContent = "No clues collected yet.";
+
+    libraryBooks = [];
+    libraryCollected = [];
+
+    const symbols = ["◆", "●", "▲", "★", "■"];
+
+    for (let i = 0; i < 5; i++) {
+        libraryBooks.push({
+            number: Math.floor(Math.random() * 9) + 1,
+            symbol: symbols[i],
+            collected: false
+        });
+    }
+
+    libraryBooks.forEach((book, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "book";
+        button.textContent = `📖 Book ${index + 1}`;
+
+        button.addEventListener("click", () => collectBook(index, button));
+
+        if (booksDiv) booksDiv.appendChild(button);
+    });
+}
+
+function collectBook(index, button) {
+    const book = libraryBooks[index];
+
+    if (!book || book.collected || dead || gameEnded) return;
 
     book.collected = true;
-
     libraryCollected.push(book);
 
+    button.disabled = true;
+    button.textContent = `✅ ${book.symbol} = ${book.number}`;
 
-    const buttons =
-        document.querySelectorAll(
-            ".book"
-        );
+    if (cluesDiv) {
+        const clue = document.createElement("div");
+        clue.className = "library-clue";
+        clue.textContent = `${book.symbol} = ${book.number}`;
+        cluesDiv.appendChild(clue);
+    }
 
-
-    buttons[index].disabled =
-        true;
-
-
-    buttons[index].textContent =
-        `✅ ${book.number} ${book.symbol}`;
-
-
-    updateClues();
-
-
-    if (
-        libraryCollected.length === 5
-    ) {
-
+    if (libraryCollected.length === 5) {
         startLibraryLock();
     }
 }
 
-
-// =================================
-// UPDATE CLUES
-// =================================
-
-function updateClues() {
-
-    cluesDiv.innerHTML = "";
-
-
-    libraryCollected.forEach(
-        function (book) {
-
-            const clue =
-                document.createElement("div");
-
-
-            clue.className =
-                "library-clue";
-
-
-            clue.textContent =
-                `${book.symbol} = ${book.number}`;
-
-
-            cluesDiv.appendChild(clue);
-        }
-    );
-}
-
-
-// =================================
-// LIBRARY LOCK
-// =================================
-
 function startLibraryLock() {
-
     libraryLockActive = true;
 
-    libraryPanel.style.display =
-        "none";
+    if (libraryPanel) libraryPanel.style.display = "none";
+    if (libraryLockPanel) libraryLockPanel.style.display = "block";
+    if (libraryLockStatus) libraryLockStatus.textContent = "";
 
-    libraryLockPanel.style.display =
-        "block";
+    const sortedBooks = [...libraryBooks].sort((a, b) => a.number - b.number);
 
+    if (symbolList) {
+        symbolList.replaceChildren();
 
-    libraryLockStatus.textContent =
-        "";
-
-
-    // Sort books by number
-
-    const sortedBooks =
-        [...libraryBooks].sort(
-            function (a, b) {
-                return a.number - b.number;
-            }
-        );
-
-
-    // Show correct symbol order
-
-    symbolList.innerHTML = "";
-
-
-    sortedBooks.forEach(
-        function (book, index) {
-
-            const clue =
-                document.createElement("div");
-
-
-            clue.className =
-                "library-clue";
-
-
-            clue.textContent =
-                `${index + 1}. ${book.symbol} = ${book.number}`;
-
-
+        sortedBooks.forEach((book, index) => {
+            const clue = document.createElement("div");
+            clue.className = "library-clue";
+            clue.textContent = `${index + 1}. ${book.symbol} = ${book.number}`;
             symbolList.appendChild(clue);
-        }
-    );
-
-
-    // Create number locks
-
-    lockNumbers.innerHTML = "";
-
-
-    sortedBooks.forEach(
-        function () {
-
-            const button =
-                document.createElement("button");
-
-
-            button.className =
-                "lock-number";
-
-
-            button.textContent =
-                "0";
-
-
-            button.dataset.value =
-                "0";
-
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    let value =
-                        Number(
-                            button.dataset.value
-                        );
-
-
-                    value++;
-
-
-                    if (value > 9) {
-                        value = 0;
-                    }
-
-
-                    button.dataset.value =
-                        value;
-
-
-                    button.textContent =
-                        value;
-                }
-            );
-
-
-            lockNumbers.appendChild(
-                button
-            );
-        }
-    );
-
-
-    // Start timer
-
-    libraryTimer = 70;
-
-    libraryTimerText.textContent =
-        `⏱️ Time: ${libraryTimer}`;
-
-
-    clearInterval(
-        libraryTimerInterval
-    );
-
-
-    libraryTimerInterval =
-        setInterval(
-            function () {
-
-                libraryTimer--;
-
-
-                libraryTimerText.textContent =
-                    `⏱️ Time: ${libraryTimer}`;
-
-
-                if (libraryTimer <= 0) {
-
-                    clearInterval(
-                        libraryTimerInterval
-                    );
-
-
-                    libraryLockStatus.textContent =
-                        "⏰ TIME'S UP!";
-
-
-                    damage(100);
-                }
-
-            },
-            1000
-        );
-}
-
-
-// =================================
-// UNLOCK LIBRARY
-// =================================
-
-unlockLibraryBtn.addEventListener(
-    "click",
-    checkLibraryLock
-);
-
-
-function checkLibraryLock() {
-
-    if (dead || !libraryLockActive) return;
-
-
-    const sortedBooks =
-        [...libraryBooks].sort(
-            function (a, b) {
-                return a.number - b.number;
-            }
-        );
-
-
-    const lockButtons =
-        document.querySelectorAll(
-            ".lock-number"
-        );
-
-
-    let correct = true;
-
-
-    for (
-        let i = 0;
-        i < sortedBooks.length;
-        i++
-    ) {
-
-        const entered =
-            Number(
-                lockButtons[i].dataset.value
-            );
-
-
-        if (
-            entered !==
-            sortedBooks[i].number % 10
-        ) {
-
-            correct = false;
-
-            break;
-        }
+        });
     }
 
+    if (lockNumbers) lockNumbers.replaceChildren();
+
+    // Each dial is one digit (1–9), and the books' numbers are single digits.
+    sortedBooks.forEach(() => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "lock-number";
+        button.dataset.value = "1";
+        button.textContent = "1";
+
+        button.addEventListener("click", () => {
+            let value = Number(button.dataset.value) + 1;
+            if (value > 9) value = 1;
+            button.dataset.value = String(value);
+            button.textContent = String(value);
+        });
+
+        if (lockNumbers) lockNumbers.appendChild(button);
+    });
+
+    libraryTimer = 70;
+    updateLibraryTimer();
+
+    clearInterval(libraryTimerInterval);
+
+    libraryTimerInterval = setInterval(() => {
+        if (dead || gameEnded || !libraryLockActive) {
+            clearInterval(libraryTimerInterval);
+            libraryTimerInterval = null;
+            return;
+        }
+
+        libraryTimer -= 1;
+        updateLibraryTimer();
+
+        if (libraryTimer <= 0) {
+            clearInterval(libraryTimerInterval);
+            libraryTimerInterval = null;
+
+            if (libraryLockStatus) {
+                libraryLockStatus.textContent = "⏰ Time's up!";
+            }
+
+            damage(100);
+        }
+    }, 1000);
+}
+
+function updateLibraryTimer() {
+    if (libraryTimerText) {
+        libraryTimerText.textContent = `⏱️ Time: ${libraryTimer}`;
+    }
+}
+
+function checkLibraryLock() {
+    if (dead || gameEnded || !libraryLockActive) return;
+
+    const sortedBooks = [...libraryBooks].sort((a, b) => a.number - b.number);
+    const dials = lockNumbers ? lockNumbers.querySelectorAll(".lock-number") : [];
+
+    const correct = sortedBooks.every((book, index) => {
+        return Number(dials[index]?.dataset.value) === book.number;
+    });
 
     if (!correct) {
-
-        libraryLockStatus.textContent =
-            "❌ WRONG COMBINATION!";
-
-
+        if (libraryLockStatus) libraryLockStatus.textContent = "❌ Wrong combination!";
         damage(100);
-
         return;
     }
 
-
-    clearInterval(
-        libraryTimerInterval
-    );
-
-
+    clearInterval(libraryTimerInterval);
+    libraryTimerInterval = null;
     libraryLockActive = false;
-
     libraryCompleted = true;
 
-
-    libraryLockPanel.style.display =
-        "none";
-
-
-    openDoorBtn.style.display =
-        "inline-block";
-
+    if (libraryLockPanel) libraryLockPanel.style.display = "none";
+    if (openDoorBtn) openDoorBtn.style.display = "inline-block";
 
     door = 51;
-
-    doorText.textContent =
-        "🚪 Door 51";
-
-
-    statusText.textContent =
-        "🔓 Library unlocked!";
-
-
-    alert(
-        "🔓 The Library door has been unlocked!"
-    );
+    updateDoorText();
+    setStatus("🔓 Door 50 unlocked! Continue to Door 51.");
 }
 
+if (unlockLibraryBtn) {
+    unlockLibraryBtn.addEventListener("click", checkLibraryLock);
+}
 
-// =================================
-// ELEVATOR
-// =================================
+// -------------------- Door 100 Elevator puzzle --------------------
 
 function startElevator() {
+    if (dead || gameEnded || elevatorActive) return;
 
     elevatorActive = true;
-
     elevatorRound = 0;
-
     elevatorPoints = 15;
 
-
-    openDoorBtn.style.display =
-        "none";
-
-
-    elevatorPanel.style.display =
-        "block";
-
+    if (openDoorBtn) openDoorBtn.style.display = "none";
+    if (elevatorPanel) elevatorPanel.style.display = "block";
 
     updateElevatorPoints();
-
-
     nextElevatorRound();
 }
 
-
-// =================================
-// ELEVATOR ROUND
-// =================================
-
-let elevatorCorrect = [];
-
-
 function nextElevatorRound() {
+    if (dead || gameEnded) return;
 
-    elevatorRound++;
-
+    elevatorRound += 1;
 
     if (elevatorRound > 3) {
-
-        winGame();
-
+        if (elevatorPoints >= 30) {
+            winGame();
+        } else {
+            setStatus("⚠️ The elevator power wasn't restored. Try again on a new run.");
+            damage(100);
+        }
         return;
     }
 
+    if (switchesDiv) switchesDiv.replaceChildren();
 
-    switchesDiv.innerHTML = "";
-
-
-    elevatorCorrect = [];
-
-
-    // Generate 10 random ON/OFF states
-
-    for (let i = 0; i < 10; i++) {
-
-        elevatorCorrect.push(
-            Math.random() < 0.5
-        );
-    }
-
-
-    // Tell player what to do
+    elevatorCorrect = Array.from({ length: 10 }, () => Math.random() < 0.5);
 
     const onSwitches = [];
-
     const offSwitches = [];
 
+    elevatorCorrect.forEach((isOn, index) => {
+        (isOn ? onSwitches : offSwitches).push(index + 1);
+    });
 
-    elevatorCorrect.forEach(
-        function (state, index) {
-
-            if (state) {
-
-                onSwitches.push(
-                    index + 1
-                );
-
-            }
-
-            else {
-
-                offSwitches.push(
-                    index + 1
-                );
-            }
-        }
-    );
-
-
-    elevatorInstruction.innerHTML =
-        `Round ${elevatorRound}/3<br><br>
-        🟢 ON: ${onSwitches.join(", ")}<br>
-        ⚫ OFF: ${offSwitches.join(", ")}`;
-
-
-    // Create switches
+    if (elevatorInstruction) {
+        elevatorInstruction.innerHTML =
+            `Round ${elevatorRound}/3<br><br>` +
+            `🟢 ON: ${onSwitches.join(", ")}<br>` +
+            `⚫ OFF: ${offSwitches.join(", ")}`;
+    }
 
     for (let i = 0; i < 10; i++) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "switch";
+        button.dataset.on = "false";
+        button.textContent = `Switch ${i + 1}: OFF`;
 
-        const button =
-            document.createElement("button");
+        button.addEventListener("click", () => {
+            const isOn = button.dataset.on === "true";
+            button.dataset.on = String(!isOn);
+            button.textContent = `Switch ${i + 1}: ${isOn ? "OFF" : "ON"}`;
+        });
 
-
-        button.className =
-            "switch";
-
-
-        button.dataset.on =
-            "false";
-
-
-        button.textContent =
-            `Switch ${i + 1}: OFF`;
-
-
-        button.addEventListener(
-            "click",
-            function () {
-
-                const isOn =
-                    button.dataset.on ===
-                    "true";
-
-
-                button.dataset.on =
-                    (!isOn).toString();
-
-
-                button.textContent =
-                    isOn
-                        ? `Switch ${i + 1}: OFF`
-                        : `Switch ${i + 1}: ON`;
-            }
-        );
-
-
-        switchesDiv.appendChild(
-            button
-        );
+        if (switchesDiv) switchesDiv.appendChild(button);
     }
 }
 
-
-// =================================
-// ELEVATOR CONFIRM
-// =================================
-
-confirmBtn.addEventListener(
-    "click",
-    checkElevator
-);
-
+function updateElevatorPoints() {
+    if (elevatorPointsText) {
+        elevatorPointsText.textContent = `Points: ${elevatorPoints}`;
+    }
+}
 
 function checkElevator() {
+    if (dead || gameEnded || !elevatorActive) return;
 
-    if (dead || !elevatorActive) return;
+    const switches = switchesDiv
+        ? switchesDiv.querySelectorAll(".switch")
+        : [];
 
+    let allCorrect = switches.length === 10;
 
-    const switches =
-        document.querySelectorAll(
-            ".switch"
-        );
+    switches.forEach((button, index) => {
+        const playerState = button.dataset.on === "true";
+        if (playerState !== elevatorCorrect[index]) allCorrect = false;
+    });
 
-
-    let correctCount = 0;
-
-
-    switches.forEach(
-        function (button, index) {
-
-            const playerState =
-                button.dataset.on ===
-                "true";
-
-
-            if (
-                playerState ===
-                elevatorCorrect[index]
-            ) {
-
-                correctCount++;
-
-            }
-
-        }
-    );
-
-
-    if (correctCount === 10) {
-
+    if (allCorrect) {
         elevatorPoints += 10;
-
-        alert(
-            "✅ Correct! +10 points!"
-        );
-
-    }
-
-    else {
-
+        alert("✅ All switches are correct! +10 points.");
+    } else {
         elevatorPoints -= 5;
-
-        alert(
-            `❌ Wrong! You got ${correctCount}/10 correct.\n-5 points.`
-        );
+        alert("❌ Some switches are wrong. -5 points.");
     }
-
 
     updateElevatorPoints();
 
-
-    // Death
-
     if (elevatorPoints <= 0) {
-
         damage(100);
-
         return;
     }
-
-
-    // Win immediately at 30
 
     if (elevatorPoints >= 30) {
-
         winGame();
-
         return;
     }
 
-
-    // Continue rounds
-
     if (elevatorRound < 3) {
-
         nextElevatorRound();
-
-    }
-
-    else {
-
-        winGame();
+    } else {
+        // The player has completed all three rounds without reaching 30.
+        setStatus("⚠️ The elevator still needs more power.");
+        damage(100);
     }
 }
 
-
-// =================================
-// ELEVATOR POINTS
-// =================================
-
-function updateElevatorPoints() {
-
-    elevatorPointsText.textContent =
-        `Points: ${elevatorPoints}`;
-}
-
-
-// =================================
-// WIN GAME
-// =================================
+if (confirmBtn) confirmBtn.addEventListener("click", checkElevator);
 
 function winGame() {
-
-    elevatorActive = false;
-
-
-    elevatorPanel.style.display =
-        "none";
-
-
-    statusText.textContent =
-        "🏆 YOU ESCAPED!";
-
-
-    showEndScreen(
-        "🏆 HOTEL COMPLETE!",
-        "You restored the elevator and escaped the hotel!"
-    );
+    if (gameEnded) return;
+    endGame(true);
 }
 
+// -------------------- Start game --------------------
 
-// =================================
-// INITIAL GAME STATE
-// =================================
+if (endScreen) endScreen.style.display = "none";
+if (libraryPanel) libraryPanel.style.display = "none";
+if (libraryLockPanel) libraryLockPanel.style.display = "none";
+if (elevatorPanel) elevatorPanel.style.display = "none";
 
+if (hideBtn) hideBtn.textContent = "🗄️ Hide in Closet";
+if (crouchBtn) {
+    crouchBtn.style.display = "none";
+    crouchBtn.textContent = "🧎 Crouch";
+}
+
+updateDoorText();
 updateHealth();
-
-doorText.textContent =
-    "🚪 Door 1";
-
-statusText.textContent =
-    "🚪 Exploring...";
-
-hideBtn.textContent =
-    "🗄️ Hide in Closet";
-
-crouchBtn.style.display =
-    "none";
+setStatus("🚪 Exploring...");
+'''
+path = Path("/mnt/data/doors.js")
+path.write_text(content, encoding="utf-8")
+print(f"Created {path} ({len(content.splitlines())} lines)")
