@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Player Account | Rankblox Games</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #10121b;
+            color: white;
+        }
+
+        nav {
+            max-width: 750px;
+            margin: auto;
+            padding: 12px 0 25px;
+        }
+
+        nav a {
+            color: #aebeff;
+            text-decoration: none;
+            margin-right: 16px;
+        }
+
+        main {
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .panel {
+            background: #1b1f30;
+            padding: 24px;
+            margin-bottom: 20px;
+            border-radius: 14px;
+            border: 1px solid #34394e;
+        }
+
+        h1, h2 { margin-top: 0; }
+
+        label {
+            display: block;
+            margin-top: 15px;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            margin-top: 7px;
+            padding: 12px;
+            border-radius: 7px;
+            border: 1px solid #505873;
+            background: #10121b;
+            color: white;
+        }
+
+        button {
+            padding: 12px 16px;
+            margin-top: 15px;
+            margin-right: 6px;
+            border: 0;
+            border-radius: 8px;
+            background: #526dff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button.secondary { background: #363c52; }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .muted { color: #b9bfd3; }
+
+        #message {
+            min-height: 24px;
+            overflow-wrap: anywhere;
+        }
+
+        .score {
+            padding: 12px 0;
+            border-bottom: 1px solid #34394e;
+        }
+
+        [hidden] { display: none !important; }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="index.html">🏠 Home</a>
+        <a href="games.html">🎮 Play</a>
+    </nav>
+
+    <main>
+        <h1>👤 Player Account</h1>
+        <p class="muted">Create an account or log in to view your profile and saved scores.</p>
+
+        <section id="authPanel" class="panel">
+            <button id="showLogin" type="button" class="secondary">
+                Log In
+            </button>
+
+            <button id="showSignup" type="button">
+                Sign Up
+            </button>
+
+            <h2 id="formTitle">Log In</h2>
+
+            <form id="accountForm">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    minlength="3"
+                    maxlength="20"
+                    pattern="[A-Za-z0-9_]{3,20}"
+                    autocomplete="username"
+                    required
+                >
+
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    minlength="10"
+                    maxlength="72"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <p class="muted">
+                    Usernames: 3–20 letters, numbers, or underscores.
+                    Use a unique password that you don't use on other websites.
+                </p>
+
+                <button id="submitButton" type="submit">Log In</button>
+            </form>
+
+            <p id="message" role="status" aria-live="polite"></p>
+        </section>
+
+        <section id="profilePanel" class="panel" hidden>
+            <h2>Welcome, <span id="profileUsername"></span>!</h2>
+            <p>Your Rankblox Games profile</p>
+
+            <h3>🏆 Saved High Scores</h3>
+            <div id="highscores">
+                Loading scores...
+            </div>
+
+            <button id="refreshScores" type="button" class="secondary">
+                Refresh Scores
+            </button>
+
+            <button id="logoutButton" type="button">
+                Log Out
+            </button>
+
+            <p id="profileMessage" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="rankblox-auth.js"></script>
+    <script src="account.js"></script>
+</body>
+</html>
