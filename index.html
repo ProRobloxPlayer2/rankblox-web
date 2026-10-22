@@ -2,95 +2,91 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rankblox Games</title>
 
     <style>
+        * { box-sizing: border-box; }
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #111;
+            background: #10121b;
             color: white;
-            text-align: center;
-        }
-
-        header {
-            background: #222;
-            padding: 20px;
         }
 
         nav {
-            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 18px 6%;
+            background: #191c2b;
         }
 
         nav a {
             color: white;
             text-decoration: none;
-            margin: 0 15px;
-            font-weight: bold;
+            margin: 0 8px;
         }
 
-        nav a:hover {
-            color: #00aaff;
+        nav a:hover { color: #8eabff; }
+
+        .hero {
+            text-align: center;
+            padding: 90px 20px;
         }
 
-        .logo {
-            width: 250px;
-            max-width: 80%;
-            height: auto;
-            margin: 20px auto;
-        }
+        .hero h1 { font-size: clamp(2rem, 6vw, 3.5rem); }
 
-        main {
-            padding: 30px 20px;
+        .hero p {
+            color: #c5c8d8;
+            font-size: 1.1rem;
         }
 
         .button {
             display: inline-block;
-            padding: 12px 25px;
-            margin: 10px;
-            background: #007bff;
+            padding: 13px 22px;
+            margin: 10px 5px;
+            background: #526dff;
             color: white;
+            border-radius: 9px;
             text-decoration: none;
-            border-radius: 8px;
             font-weight: bold;
         }
 
-        .button:hover {
-            background: #005fcc;
+        .button.secondary { background: #30354c; }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #a9aec3;
         }
     </style>
 </head>
 
 <body>
+    <nav>
+        <strong>🎮 Rankblox Games</strong>
 
-    <header>
-        <h1>🎮 Rankblox Games</h1>
-
-        <nav>
+        <div>
             <a href="index.html">Home</a>
-            <a href="games.html">Games</a>
-        </nav>
-    </header>
+            <a href="games.html">Play</a>
+            <a href="account.html">Account</a>
+        </div>
+    </nav>
 
-    <main>
+    <main class="hero">
+        <h1>Welcome to Rankblox Games!</h1>
+        <p>Play games, beat your high scores, and build your player profile.</p>
 
-        <!-- WEBSITE PICTURE / LOGO -->
-        <img
-            src="logo.png"
-            alt="Rankblox Games"
-            class="logo"
-        >
-
-        <h2>Welcome to Rankblox Games!</h2>
-
-        <p>Play games and check out my projects.</p>
-
-        <a class="button" href="games.html">
-            🎮 View Games
-        </a>
+        <a class="button" href="games.html">🎮 Play Games</a>
+        <a class="button secondary" href="account.html">👤 Sign Up / Log In</a>
     </main>
 
+    <footer>
+        Rankblox Games · Play, explore, and improve!
+    </footer>
 </body>
 </html>
