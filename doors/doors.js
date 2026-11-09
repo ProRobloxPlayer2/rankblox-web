@@ -1,7 +1,5 @@
-from pathlib import Path
-
-content = r'''// ===============================================
-// RANKBLOX DOORS — complete replacement doors.js
+// ===============================================
+// RANKBLOX DOORS — corrected doors.js
 // Works with the current doors.html and doors.css.
 // ===============================================
 
@@ -134,7 +132,6 @@ function showEndScreen(title, message) {
         endTitle.textContent = title;
         endMessage.textContent = message;
     } else {
-        // Fallback if the end-screen HTML has not been added yet.
         alert(`${title}\n\n${message}`);
     }
 
@@ -294,7 +291,7 @@ function toggleCloset() {
         if (hideBtn) hideBtn.textContent = "🚪 Exit Closet";
         setStatus("🗄️ You are hiding in the closet.");
 
-        // Important: each closet visit gets a fresh, independent timer.
+        // Each closet visit gets a fresh timer.
         clearTimeout(closetTimer);
 
         closetTimer = setTimeout(() => {
@@ -351,7 +348,7 @@ function startRush() {
 function startAmbush() {
     if (dead || gameEnded) return;
 
-    const rebounds = Math.floor(Math.random() * 10) + 3; // 3–12
+    const rebounds = Math.floor(Math.random() * 10) + 3;
     let attack = 0;
 
     setStatus(`⚠️ Ambush is coming! ${rebounds} passes!`);
@@ -456,7 +453,11 @@ function toggleCrouch() {
         crouchBtn.textContent = crouching ? "🧍 Stand Up" : "🧎 Crouch";
     }
 
-    setStatus(crouching ? "🧎 You're crouching. Keep opening doors!" : "⚠️ You're standing. Crouch before opening the next door!");
+    setStatus(
+        crouching
+            ? "🧎 You're crouching. Keep opening doors!"
+            : "⚠️ You're standing. Crouch before opening the next door!"
+    );
 }
 
 function finishSeek() {
@@ -558,7 +559,7 @@ function startLibraryLock() {
 
     if (lockNumbers) lockNumbers.replaceChildren();
 
-    // Each dial is one digit (1–9), and the books' numbers are single digits.
+    // Each dial is one digit (1–9).
     sortedBooks.forEach(() => {
         const button = document.createElement("button");
         button.type = "button";
@@ -614,14 +615,18 @@ function checkLibraryLock() {
     if (dead || gameEnded || !libraryLockActive) return;
 
     const sortedBooks = [...libraryBooks].sort((a, b) => a.number - b.number);
-    const dials = lockNumbers ? lockNumbers.querySelectorAll(".lock-number") : [];
+    const dials = lockNumbers
+        ? lockNumbers.querySelectorAll(".lock-number")
+        : [];
 
     const correct = sortedBooks.every((book, index) => {
         return Number(dials[index]?.dataset.value) === book.number;
     });
 
     if (!correct) {
-        if (libraryLockStatus) libraryLockStatus.textContent = "❌ Wrong combination!";
+        if (libraryLockStatus) {
+            libraryLockStatus.textContent = "❌ Wrong combination!";
+        }
         damage(100);
         return;
     }
@@ -676,7 +681,10 @@ function nextElevatorRound() {
 
     if (switchesDiv) switchesDiv.replaceChildren();
 
-    elevatorCorrect = Array.from({ length: 10 }, () => Math.random() < 0.5);
+    elevatorCorrect = Array.from(
+        { length: 10 },
+        () => Math.random() < 0.5
+    );
 
     const onSwitches = [];
     const offSwitches = [];
@@ -726,7 +734,9 @@ function checkElevator() {
 
     switches.forEach((button, index) => {
         const playerState = button.dataset.on === "true";
-        if (playerState !== elevatorCorrect[index]) allCorrect = false;
+        if (playerState !== elevatorCorrect[index]) {
+            allCorrect = false;
+        }
     });
 
     if (allCorrect) {
@@ -752,13 +762,14 @@ function checkElevator() {
     if (elevatorRound < 3) {
         nextElevatorRound();
     } else {
-        // The player has completed all three rounds without reaching 30.
         setStatus("⚠️ The elevator still needs more power.");
         damage(100);
     }
 }
 
-if (confirmBtn) confirmBtn.addEventListener("click", checkElevator);
+if (confirmBtn) {
+    confirmBtn.addEventListener("click", checkElevator);
+}
 
 function winGame() {
     if (gameEnded) return;
@@ -772,7 +783,10 @@ if (libraryPanel) libraryPanel.style.display = "none";
 if (libraryLockPanel) libraryLockPanel.style.display = "none";
 if (elevatorPanel) elevatorPanel.style.display = "none";
 
-if (hideBtn) hideBtn.textContent = "🗄️ Hide in Closet";
+if (hideBtn) {
+    hideBtn.textContent = "🗄️ Hide in Closet";
+}
+
 if (crouchBtn) {
     crouchBtn.style.display = "none";
     crouchBtn.textContent = "🧎 Crouch";
@@ -781,7 +795,3 @@ if (crouchBtn) {
 updateDoorText();
 updateHealth();
 setStatus("🚪 Exploring...");
-'''
-path = Path("/mnt/data/doors.js")
-path.write_text(content, encoding="utf-8")
-print(f"Created {path} ({len(content.splitlines())} lines)")
