@@ -1,4 +1,3 @@
-
 const client = window.rankbloxClient;
 
 const authPanel = document.getElementById("authPanel");
@@ -6,6 +5,8 @@ const profilePanel = document.getElementById("profilePanel");
 const accountForm = document.getElementById("accountForm");
 
 const usernameInput = document.getElementById("username");
+const emailInput = document.getElementById("email");
+const emailField = document.getElementById("emailField");
 const passwordInput = document.getElementById("password");
 
 const formTitle = document.getElementById("formTitle");
@@ -28,14 +29,19 @@ let busy = false;
 function setMode(mode) {
     formMode = mode;
 
+    const signingUp = mode === "signup";
+
     formTitle.textContent =
-        mode === "signup" ? "Create Your Account" : "Log In";
+        signingUp ? "Create Your Account" : "Log In";
 
     submitButton.textContent =
-        mode === "signup" ? "Create Account" : "Log In";
+        signingUp ? "Create Account" : "Log In";
 
     passwordInput.autocomplete =
-        mode === "signup" ? "new-password" : "current-password";
+        signingUp ? "new-password" : "current-password";
+
+    emailField.hidden = !signingUp;
+    emailInput.required = signingUp;
 
     message.textContent = "";
 }
@@ -59,10 +65,13 @@ function explainError(error) {
         text.includes("already exists") ||
         text.includes("duplicate key")
     ) {
-        return "That username may already be taken.";
+        return "That username or email may already be in use.";
     }
 
-    if (text.includes("invalid login credentials")) {
+    if (
+        text.includes("invalid login credentials") ||
+        text.includes("invalid username or password")
+    ) {
         return "Username or password is incorrect.";
     }
 
@@ -70,7 +79,50 @@ function explainError(error) {
         return "The password was rejected. Check its length.";
     }
 
+    if (text.includes("email")) {
+        return "Please enter a valid email address that you can access.";
+    }
+
     return error?.message || "Something went wrong.";
+}
+
+
+// Log in with username through the secure Supabase Edge Function.
+
+async function loginWithUsername(username, password) {
+    const response = await fetch(
+        window.RANKBLOX_SUPABASE_URL + "/functions/v1/rankblox-login",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": window.RANKBLOX_SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                username: username.toLowerCase(),
+                password: password
+            })
+        }
+    );
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(
+            result.error || "Invalid username or password."
+        );
+    }
+
+    if (!result.access_token || !result.refresh_token) {
+        throw new Error("The login service returned an invalid session.");
+    }
+
+    const { error } = await client.auth.setSession({
+        access_token: result.access_token,
+        refresh_token: result.refresh_token
+    });
+
+    if (error) throw error;
 }
 
 
@@ -87,6 +139,7 @@ accountForm.addEventListener("submit", async (event) => {
 
     const username = usernameInput.value.trim();
     const normalizedUsername = username.toLowerCase();
+    const email = emailInput.value.trim();
     const password = passwordInput.value;
 
     try {
@@ -102,13 +155,14 @@ accountForm.addEventListener("submit", async (event) => {
             );
         }
 
-        const email =
-            window.rankbloxLoginIdentifier(normalizedUsername);
-
         if (formMode === "signup") {
+            if (!email) {
+                throw new Error("Please enter your email address.");
+            }
+
             const { data, error } = await client.auth.signUp({
-                email,
-                password,
+                email: email,
+                password: password,
                 options: {
                     data: {
                         username: normalizedUsername
@@ -118,25 +172,20 @@ accountForm.addEventListener("submit", async (event) => {
 
             if (error) throw error;
 
+            passwordInput.value = "";
+
             if (!data.session) {
                 message.textContent =
-                    "Account created, but no session was returned. " +
-                    "Check Supabase email-confirmation settings.";
+                    "Account created! Check your email for a confirmation link. " +
+                    "After confirming, log in with your username and password.";
                 return;
             }
 
-            passwordInput.value = "";
             message.textContent = "Account created!";
-
             await showProfile();
 
         } else {
-            const { error } = await client.auth.signInWithPassword({
-                email,
-                password
-            });
-
-            if (error) throw error;
+            await loginWithUsername(normalizedUsername, password);
 
             passwordInput.value = "";
             message.textContent = "Logged in!";
@@ -297,6 +346,7 @@ document.getElementById("logoutButton")
         knobsBalance.textContent = "0";
 
         usernameInput.value = "";
+        emailInput.value = "";
         passwordInput.value = "";
 
         setMode("login");
