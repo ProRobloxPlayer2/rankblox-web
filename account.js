@@ -1,3 +1,4 @@
+
 const client = window.rankbloxClient;
 
 const authPanel = document.getElementById("authPanel");
@@ -14,6 +15,9 @@ const message = document.getElementById("message");
 const profileUsername = document.getElementById("profileUsername");
 const highscoresDiv = document.getElementById("highscores");
 const profileMessage = document.getElementById("profileMessage");
+
+const adminBadge = document.getElementById("adminBadge");
+const knobsBalance = document.getElementById("knobsBalance");
 
 let formMode = "login";
 let busy = false;
@@ -45,15 +49,17 @@ document.getElementById("showSignup").addEventListener("click", () => {
 });
 
 
-// Friendly messages for common errors.
+// Friendly error messages.
 
 function explainError(error) {
     const text = String(error?.message || "").toLowerCase();
 
-    if (text.includes("already registered") ||
+    if (
+        text.includes("already registered") ||
         text.includes("already exists") ||
-        text.includes("duplicate key")) {
-        return "That username may already be taken. Try another one.";
+        text.includes("duplicate key")
+    ) {
+        return "That username may already be taken.";
     }
 
     if (text.includes("invalid login credentials")) {
@@ -61,10 +67,10 @@ function explainError(error) {
     }
 
     if (text.includes("password")) {
-        return "The password was rejected. Check its length and try again.";
+        return "The password was rejected. Check its length.";
     }
 
-    return error?.message || "Something went wrong. Please try again.";
+    return error?.message || "Something went wrong.";
 }
 
 
@@ -86,7 +92,7 @@ accountForm.addEventListener("submit", async (event) => {
     try {
         if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) {
             throw new Error(
-                "Use 3–20 letters, numbers, or underscores for your username."
+                "Use 3–20 letters, numbers, or underscores."
             );
         }
 
@@ -96,7 +102,8 @@ accountForm.addEventListener("submit", async (event) => {
             );
         }
 
-        const email = window.rankbloxLoginIdentifier(normalizedUsername);
+        const email =
+            window.rankbloxLoginIdentifier(normalizedUsername);
 
         if (formMode === "signup") {
             const { data, error } = await client.auth.signUp({
@@ -113,12 +120,14 @@ accountForm.addEventListener("submit", async (event) => {
 
             if (!data.session) {
                 message.textContent =
-                    "Account created, but no session was returned. Check the Supabase email-confirmation settings.";
+                    "Account created, but no session was returned. " +
+                    "Check Supabase email-confirmation settings.";
                 return;
             }
 
             passwordInput.value = "";
             message.textContent = "Account created!";
+
             await showProfile();
 
         } else {
@@ -131,6 +140,7 @@ accountForm.addEventListener("submit", async (event) => {
 
             passwordInput.value = "";
             message.textContent = "Logged in!";
+
             await showProfile();
         }
 
@@ -145,7 +155,31 @@ accountForm.addEventListener("submit", async (event) => {
 });
 
 
-// Load the player's own profile and scores.
+// Load Knobs and admin status.
+
+async function loadKnobs() {
+    adminBadge.hidden = true;
+    knobsBalance.textContent = "Loading...";
+
+    const result = await window.getRankbloxKnobs();
+
+    if (!result.success) {
+        knobsBalance.textContent = "Unavailable";
+        return;
+    }
+
+    if (result.isAdmin) {
+        adminBadge.hidden = false;
+        knobsBalance.textContent = "∞";
+    } else {
+        adminBadge.hidden = true;
+        knobsBalance.textContent =
+            result.knobs.toLocaleString();
+    }
+}
+
+
+// Load the player's profile.
 
 async function showProfile() {
     const {
@@ -167,8 +201,10 @@ async function showProfile() {
 
     if (error) {
         console.error(error);
+
         profileMessage.textContent =
             "Couldn't load your profile. Check the database setup.";
+
         return;
     }
 
@@ -177,11 +213,12 @@ async function showProfile() {
 
     profileUsername.textContent = profile.username;
 
+    await loadKnobs();
     await loadHighScores(user.id);
 }
 
 
-// Display recent scores.
+// Display recent high scores.
 
 async function loadHighScores(userId) {
     highscoresDiv.textContent = "Loading scores...";
@@ -219,7 +256,8 @@ async function loadHighScores(userId) {
 
         const date = document.createElement("div");
         date.className = "muted";
-        date.textContent = new Date(item.created_at).toLocaleString();
+        date.textContent =
+            new Date(item.created_at).toLocaleString();
 
         row.append(name, score, date);
         highscoresDiv.appendChild(row);
@@ -229,47 +267,54 @@ async function loadHighScores(userId) {
 
 // Refresh scores.
 
-document.getElementById("refreshScores").addEventListener("click", async () => {
-    const {
-        data: { user }
-    } = await client.auth.getUser();
+document.getElementById("refreshScores")
+    .addEventListener("click", async () => {
+        const {
+            data: { user }
+        } = await client.auth.getUser();
 
-    if (user) {
-        await loadHighScores(user.id);
-    }
-});
+        if (user) {
+            await loadHighScores(user.id);
+        }
+    });
 
 
 // Log out.
 
-document.getElementById("logoutButton").addEventListener("click", async () => {
-    const { error } = await client.auth.signOut();
+document.getElementById("logoutButton")
+    .addEventListener("click", async () => {
+        const { error } = await client.auth.signOut();
 
-    if (error) {
-        profileMessage.textContent = explainError(error);
-        return;
-    }
+        if (error) {
+            profileMessage.textContent = explainError(error);
+            return;
+        }
 
-    profilePanel.hidden = true;
-    authPanel.hidden = false;
+        profilePanel.hidden = true;
+        authPanel.hidden = false;
 
-    usernameInput.value = "";
-    passwordInput.value = "";
+        adminBadge.hidden = true;
+        knobsBalance.textContent = "0";
 
-    setMode("login");
-    message.textContent = "You have logged out.";
-});
+        usernameInput.value = "";
+        passwordInput.value = "";
+
+        setMode("login");
+        message.textContent = "You have logged out.";
+    });
 
 
-// Restore the session if the player is already logged in.
+// Restore existing session.
 
 async function initialiseAccountPage() {
     try {
         await showProfile();
     } catch (error) {
         console.error(error);
+
         message.textContent =
-            "Couldn't connect to the account service. Check your Supabase configuration.";
+            "Couldn't connect to the account service. " +
+            "Check your Supabase configuration.";
     }
 }
 
