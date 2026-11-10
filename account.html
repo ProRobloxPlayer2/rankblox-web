@@ -90,6 +90,18 @@
             border-bottom: 1px solid #34394e;
         }
 
+        .admin-badge {
+            display: inline-block;
+            background: #e0a629;
+            color: #171717;
+            padding: 5px 9px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            vertical-align: middle;
+        }
+
         [hidden] { display: none !important; }
     </style>
 </head>
@@ -128,6 +140,17 @@
                     required
                 >
 
+                <div id="emailField" hidden>
+                    <label for="email">Email Address</label>
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        maxlength="254"
+                        autocomplete="email"
+                    >
+                </div>
+
                 <label for="password">Password</label>
                 <input
                     id="password"
@@ -151,13 +174,15 @@
         </section>
 
         <section id="profilePanel" class="panel" hidden>
-            <h2>Welcome, <span id="profileUsername"></span>!</h2>
+            <h2>
+                Welcome, <span id="profileUsername"></span>!
+                <span id="adminBadge" class="admin-badge" hidden>ADMIN</span>
+            </h2>
             <p>Your Rankblox Games profile</p>
+            <p>🪙 Knobs: <strong id="knobsBalance">Loading...</strong></p>
 
             <h3>🏆 Saved High Scores</h3>
-            <div id="highscores">
-                Loading scores...
-            </div>
+            <div id="highscores">Loading scores...</div>
 
             <button id="refreshScores" type="button" class="secondary">
                 Refresh Scores
